@@ -1,4 +1,3 @@
-
 import time, sys, traceback, math, numpy, signal,json, random,copy
 import threading
 import urllib.request
@@ -43,7 +42,7 @@ class Robot:
         self.room = room
         self.name = name
         self.players_information = [None, None, None, None]
-        self.cards = []
+        self.cards_list = []
         self.initial_cards = []
         self.history = []
         self.cards_on_table = []
@@ -146,9 +145,14 @@ class RobotFamily:
         def gameend(data):
             pt.gameend(data)
 
+        @self.sio.on('interrupt_game_end')
+        def interrupt_game_end(data):
+            pt.interruptgameend(data)
+
         @self.sio.on('error')
         def error(data):
             pt.error(data)
+
 
     def connect(self):
         self.sio.connect(self.url)
@@ -259,9 +263,9 @@ class RobotFamily:
             return
 
         player.initial_cards = copy.deepcopy(data["cards"])
-        player.cards = copy.deepcopy(data["cards"])
+        player.cards_list = copy.deepcopy(data["cards"])
 
-    def tableupdate(self,data):
+    def update(self,data):
         data = self.strip_data(data)
         if isinstance(data, int):
             return
@@ -275,8 +279,8 @@ class RobotFamily:
         start = data['trick_start']
 
         player.cards_on_table = []
-        for i,card in enumerate(cards_on_table):
-            player.cards_on_table.append([(i+start)%player.game_mode,card])
+        player.cards_on_table.append(start)
+        player.cards_on_table.extend(cards_on_table)
 
     def yourturn(self,data):
         data = self.strip_data(data)
@@ -288,7 +292,11 @@ class RobotFamily:
             self.sendmsg('error', {'detail': "no such player"})
             return
 
+        if not player.state == 'trick_before_play':
+            return
+
         card = player.pick_a_card(data['color'])
+
         self.sendmsg('mychoice', {'user': player.name, 'card':card, 'room':player.room})
 
     def gotyourchoice(self,data):
@@ -301,7 +309,7 @@ class RobotFamily:
             self.sendmsg('error', {'detail': "no such player"})
             return
 
-        player.cards = copy.deepcopy(data['your_remain'])
+        player.cards_list = copy.deepcopy(data['your_remain'])
 
     def gotleaveroom(self,data):
         data = self.strip_data(data)
@@ -350,8 +358,21 @@ class RobotFamily:
         player.scores_num = copy.deepcopy(data['scores_num'])
         player.scores = copy.deepcopy(data['scores'])
 
-        time.sleep(1)
+        #time.sleep(1)
         self.cancel_player(player.name)
+
+    def interruptgameend(self,data):
+        data = self.strip_data(data)
+        if isinstance(data, int):
+            return
+
+        player = self.find_player(data['name'])
+        if not player:
+            self.sendmsg('error', {'detail': "no such player"})
+            return
+
+        self.cancel_player(player.name)
+
 
     def error(self,data):
         data = self.strip_data(data)
@@ -382,23 +403,25 @@ class RobotFamily:
             self.sio.disconnect()
         print("disconnect from server")
 
+
+robot_list = [Robot]
+
 if __name__ == '__main__':
-    fm = RobotFamily('http://127.0.0.1:5000',Robot)
+    fm = RobotFamily('http://0.0.0.0:5000',Robot)
     fm.connect()
     print('a')
-    #fm.create_room()
+    fm.create_room()
     print('b')
-    #while fm.members[0].place == -1:
-    #    time.sleep(1)
-    #    print('gg')
-    #print('c')
-    #id = fm.members[0].room
-    id=1
-    #print('d')
-    #fm.add_member(id,1)
-    #fm.add_member(id,2)
+    while fm.members[0].place == -1:
+        time.sleep(1)
+        print('gg')
+    print('c')
+    id = fm.members[0].room
+    print('d')
+    fm.add_member(id,1)
     fm.add_member(id,2)
-    #print('f')
+    fm.add_member(id,3)
+    print('f')
 
 
 
