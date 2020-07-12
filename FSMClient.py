@@ -1,130 +1,57 @@
-import time, sys, traceback, math, numpy, signal,json, random,copy
+import time, sys, traceback, math,signal,json, random,copy
 import threading
 import urllib.request
 import os
 import socketio
+import numpy as np
 import requests
-sleep_time = 0.2
 
-LOGLEVEL = {0: "DEBUG", 1: "INFO", 2: "WARN", 3: "ERR", 4: "FATAL"}
-LOGFILE = sys.argv[0].split(".")
-LOGFILE[-1] = "log"
-LOGFILE = ".".join(LOGFILE)
+from Utils import ORDER_DICT1,ORDER_DICT2,cards_order
+from Robots import *
+
+Recording_History = True
 
 
-def log(msg, l=1, end="\n", logfile=None, fileonly=False):
-    st = traceback.extract_stack()[-2]
-    lstr = LOGLEVEL[l]
-    now_str = "%s %03d" % (time.strftime("%y/%m/%d %H:%M:%S", time.localtime()), math.modf(time.time())[0] * 1000)
-    if l < 3:
-        tempstr = "%s [%s,%s:%d] %s%s" % (now_str, lstr, st.name, st.lineno, str(msg), end)
+LOGLEVEL={0:"DEBUG",1:"INFO",2:"WARN",3:"ERR",4:"FATAL"}
+LOGFILE=sys.argv[0].split(".")
+LOGFILE[-1]="log"
+LOGFILE=".".join(LOGFILE)
+def log(msg,l=1,end="\n",logfile=None,fileonly=False):
+    st=traceback.extract_stack()[-2]
+    lstr=LOGLEVEL[l]
+    now_str="%s %03d"%(time.strftime("%y/%m/%d %H:%M:%S",time.localtime()),math.modf(time.time())[0]*1000)
+    if l<3:
+        tempstr="%s [%s,%s:%d] %s%s"%(now_str,lstr,st.name,st.lineno,str(msg),end)
     else:
-        tempstr = "%s [%s,%s:%d] %s:\n%s%s" % (
-        now_str, lstr, st.name, st.lineno, str(msg), traceback.format_exc(limit=5), end)
+        tempstr="%s [%s,%s:%d] %s:\n%s%s"%(now_str,lstr,st.name,st.lineno,str(msg),traceback.format_exc(limit=5),end)
     if not fileonly:
-        print(tempstr, end="")
-    if l >= 1 or fileonly:
-        if logfile == None:
-            logfile = LOGFILE
-        with open(logfile, "a") as f:
+        print(tempstr,end="")
+    if l>=2 or fileonly:
+        if logfile==None:
+            logfile=LOGFILE
+        with open(logfile,"a") as f:
             f.write(tempstr)
 
-
-ORDER_DICT1={'S':-300,'H':-200,'D':-100,'C':0,'J':-200}
-ORDER_DICT2={'2':2,'3':3,'4':4,'5':5,'6':6,'7':7,'8':8,'9':9,'1':10,'J':11,'Q':12,'K':13,'A':14,'P':15,'G':16}
-def cards_order(card):
-    return ORDER_DICT1[card[0]]+ORDER_DICT2[card[1]]
-
-
-class Robot:
-    def __init__(self,room,place,name,create_room = False):
-        self.place = place
-        self.room = room
-        self.name = name
-        self.players_information = [None, None, None, None]
-        self.cards_list = []
-        self.initial_cards = []
-        self.history = []
-        self.cards_on_table = []
-        self.game_mode = 4
-        self.scores = [[],[],[],[]]
-        self.scores_num = [0,0,0,0]
-        self.state = 'logout'
-        self.creator = create_room
-
-    def pick_a_card(self):
-        self.mycards = {"S": [], "H": [], "D": [], "C": [], "J": []}
-        for i in self.cards_list:
-            self.mycards[i[0]].append(i[1:])
-
-        suit = 'A' if len(self.cards_on_table) == 1 else self.cards_on_table[1][0]
-
-        while True:
-            if suit == 'H':
-                if suit not in self.mycards:
-                    if 'J' not in self.mycards:
-                        suit = random.choice(list(self.mycards.keys()))
-                    else:
-                        suit = 'J'
-            elif suit == 'J':
-                if suit not in self.mycards:
-                    if 'H' not in self.mycards:
-                        suit = random.choice(list(self.mycards.keys()))
-                    else:
-                        suit = 'H'
-
-            else:
-                if suit not in self.mycards:
-                    suit = random.choice(list(self.mycards.keys()))
-
-            if len(self.mycards[suit]) == 0:
-                self.mycards.pop(suit)
-                continue
-            else:
-                break
-
-        i = random.randint(0, len(self.mycards[suit]) - 1)
-
-        print("{} plays {}".format(self.name,suit + self.mycards[suit][i]))
-
-        return suit + self.mycards[suit][i]
-
-    def __str__(self):
-        return 'name:{} state:{}'.format(self.name,self.state)
-
-    def shuffle(self):
-        pass
-
-    def update(self):
-        pass
-
-    def trickend(self):
-        pass
-
-    def gameend(self):
-        print('result:{} my score:{}'.format(self.scores_num,self.scores_num[self.place]))
-        time.sleep(1)
-
-    @staticmethod
-    def family_name():
-        return 'Coucou'
-
-
-
-
 class RobotFamily:
-    def __init__(self,url,robot_type):
+    def __init__(self,url):
         self.members = []
         self.sio = socketio.Client()
-        self.robot = robot_type
         self.url = url
 
         pt = self
         self.a = 0
+        self.turn = 0
 
         @self.sio.event
         def connect():
+            self.sendmsg('update_sid',{'user':''})
             log("connect to server %s" % (pt.url))
+            if self.turn == 100:
+                for pl in self.members:
+                    resnp = np.array(pl.res)
+                    print('{} mean:{} var:{}'.format(pl.name,resnp.mean(),math.sqrt(resnp.var())))
+                self.sio.disconnect()
+                return
             for rb in self.members:
                 print(rb)
                 self.sendmsg('request_info',{'user':rb.name})
@@ -132,7 +59,7 @@ class RobotFamily:
 
         @self.sio.event
         def disconnect():
-
+            self.turn += 1
             log("disconnect from server %s" % (pt.url))
 
         @self.sio.on('login_reply')
@@ -199,6 +126,17 @@ class RobotFamily:
         def error(data):
             pt.error(data)
 
+        @self.sio.on('add_robot')
+        def add_robot(data):
+            pt.addrobot(data)
+
+        @self.sio.on('cancel_player')
+        def cancel(data):
+            print('cancel this robot')
+            data = self.strip_data(data)
+            name = data['user']
+            self.cancel_player(name)
+
     def recovery(self,data):
         data = self.strip_data(data)
         if isinstance(data, int):
@@ -209,20 +147,23 @@ class RobotFamily:
             return
 
         player.state = data['state']
+
         if player.state == 'logout':
-            self.cancel_player(player.name)
+            #self.cancel_player(player.name)
             return
         if player.state == 'login':
             if player.room > 0:
                 self.sendmsg('enter_room',{'user':player.name,'room':player.room})
             else:
-                self.cancel_player(player.name)
+                pass
+                #self.cancel_player(player.name)
             return
         if player.state == 'room':
             if player.room > 0:
                 self.sendmsg('choose_place', {'user': player.name, 'room': player.room, 'place': player.place})
             else:
-                self.cancel_player(player.name)
+                #self.cancel_player(player.name)
+                pass
             return
 
         player.room = data['room']
@@ -284,13 +225,13 @@ class RobotFamily:
             return 2
         return data
 
-    def make_a_name(self):
+    def make_a_name(self,robot):
         ap = 0
         Flag = True
         name = ''
         while (Flag):
             Flag = False
-            name = self.robot.family_name() + str(ap)
+            name = robot.family_name() + str(ap)
             for rb in self.members:
                 if name == rb.name:
                     ap += 1
@@ -298,12 +239,14 @@ class RobotFamily:
                     break
         return name
 
-    def add_member(self, room, place):
-        name = self.make_a_name()
-        self.members.append(self.robot(room, place, name))
+    def add_member(self, room, place, robot, master = 'MrLi'):
+        name = self.make_a_name(robot)
+        rb = robot(room, place, name)
+        rb.master = master
+        self.members.append(rb)
         #'login': {"user": "name", "user_pwd": "pwd", "room": roomid}
         #TODO:place, robot password
-        self.sendmsg('login',{"user":name,"user_pwd":-1,"is_robot":True,"robot_type":self.robot.family_name()})
+        self.sendmsg('login',{"user":name,"user_pwd":-1,"is_robot":True,"robot_type":robot.family_name()})
         return name
 
     def find_player(self,name):
@@ -360,7 +303,7 @@ class RobotFamily:
             return
 
         player.state = 'room'
-        self.sendmsg('choose_place', {'user':player.name,'room':player.room,'place':player.place})
+        self.sendmsg('choose_place', {'user':player.name,'room':player.room,'place':player.place,'master':player.master})
 
     def chooseplacereply(self,data):
         data = self.strip_data(data)
@@ -459,11 +402,11 @@ class RobotFamily:
         player.state = 'play_a_card'
 
         card = player.pick_a_card()
-        print('sending choice')
+        #print('sending choice')
         self.sendmsg('my_choice', {'user': player.name, 'card':card})
 
     def mychoicereply(self,data):
-        print('enter reply')
+        #print('enter reply')
         data = self.strip_data(data)
         if isinstance(data, int):
             return
@@ -481,7 +424,7 @@ class RobotFamily:
         if not tmp == len(player.cards_list):
             player.state = 'trick_after_play'
             #self.sendmsg('error', {'user': player.name, 'detail': 'just test'})
-            print('recevive choice reply')
+            #('recevive choice reply')
         else:
             card = player.pick_a_card()
             self.sendmsg('my_choice', {'user': player.name, 'card': card})
@@ -506,7 +449,7 @@ class RobotFamily:
         self.members.pop(index)
 
     def trickend(self,data):
-        print('receive trick end')
+        #print('receive trick end')
         data = self.strip_data(data)
         if isinstance(data, int):
             return
@@ -519,6 +462,9 @@ class RobotFamily:
         if not player.state == 'trick_after_play':
             return
 
+        if player.place == 0:
+            print()
+
         player.scores = copy.deepcopy(data['scores'])
         player.history.append(player.cards_on_table)
         player.cards_on_table = []
@@ -526,7 +472,7 @@ class RobotFamily:
         player.trickend()
 
     def gameend(self,data):
-        print('receive game end')
+        #print('receive game end')
         data = self.strip_data(data)
         if isinstance(data, int):
             return
@@ -545,7 +491,7 @@ class RobotFamily:
 
         player.state = 'end'
 
-        print('send new game')
+        #print('send new game')
         self.sendmsg('new_game',{'user':data['user']})
 
         #time.sleep(1)
@@ -588,43 +534,44 @@ class RobotFamily:
         if not player:
             self.sendmsg('error', {'detail': "no such player"})
             return
+        print('bonne journee1')
+        print(player.state)
+        if not player.state == 'before_start':
+            return
+        print('bonne journee2')
+        print(player.state)
+        self.sendmsg('logout',{'user':name})
 
-        if not player.state == 'ready':
+    def addrobot(self, data):
+        data = self.strip_data(data)
+        if isinstance(data, int):
             return
 
-        self.sendmsg('logout',{'user':name})
+        rb_name = data['robot']
+        room = data['room']
+        place = data['place']
+        rb = robot_dict[rb_name]
+
+        self.add_member(room,place,rb,master=data['master'])
 
     def close_family(self):
         if len(self.members) == 0:
             self.sio.disconnect()
         print("disconnect from server")
 
-    def create_room(self):
-        name = self.make_a_name()
-        self.members.append(self.robot(0, 0, name,True))
+    def create_room(self,robot):
+        name = self.make_a_name(robot)
+        self.members.append(robot(0, 0, name,True))
         # 'login': {"user": "name", "user_pwd": "pwd", "room": roomid}
         # TODO:place, robot password
         self.sendmsg('login', {"user": name, "user_pwd": -1})
 
 
-robot_list = [Robot]
 
-if __name__ == '__main__':
-    fm = RobotFamily('http://127.0.0.1:5000',Robot)
-    fm.connect()
-    print('a')
-    fm.create_room()
-    print('b')
-    while fm.members[0].room == 0:
-        time.sleep(0.1)
-        print('gg')
-    print('c')
-    id = fm.members[0].room
-    print('d')
-    fm.add_member(id,1)
-    fm.add_member(id,2)
-    fm.add_member(id,3)
-    print('f')
+fm = RobotFamily('http://127.0.0.1:5000')
+fm.connect()
+
+
 
 
 

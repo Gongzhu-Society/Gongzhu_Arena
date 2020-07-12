@@ -256,6 +256,9 @@ class RoomHoster:
         id = self.players.index(name)
         self.players[id] = ''
         self.players_info.pop(name)
+        if self.room_state == 'full':
+            self.room_state = 'available'
+        return True
 
     def isempty(self):
         if all([not pl for pl in self.players]):
@@ -399,7 +402,7 @@ class FSMServer:
         try:
             assert self.user_state_dict[name].state == 'logout'
         except:
-            self.sendmsg('error', {'detail': 'state error'}, name=name)
+            self.sendmsg('error', {'detail': 'state error in login'}, name=name)
             return
 
         self.user_state_dict[name].state = 'login'
@@ -424,7 +427,7 @@ class FSMServer:
         try:
             assert self.user_state_dict[name].state == 'login'
         except:
-            self.sendmsg('error', {'detail': 'state error'}, name=name)
+            self.sendmsg('error', {'detail': 'state error in request room list'}, name=name)
             return
 
         state_list = []
@@ -457,7 +460,7 @@ class FSMServer:
         try:
             assert self.user_state_dict[name].state == 'login'
         except:
-            self.sendmsg('error', {'detail': 'state error'}, name=name)
+            self.sendmsg('error', {'detail': 'state error in create room'}, name=name)
             return
 
         roomid_plus_lock = threading.Lock()
@@ -493,7 +496,7 @@ class FSMServer:
         try:
             assert self.user_state_dict[name].state == 'login'
         except:
-            self.sendmsg('error', {'detail': 'state error'}, name=name)
+            self.sendmsg('error', {'detail': 'state error in enter room'}, name=name)
             return
 
         thisroom = self.rooms[roomid]
@@ -529,7 +532,7 @@ class FSMServer:
         try:
             assert self.user_state_dict[name].state == 'room'
         except:
-            self.sendmsg('error', {'detail': 'state error'}, name=name)
+            self.sendmsg('error', {'detail': 'state error in choose place'}, name=name)
             return
 
         thisroom = self.rooms[roomid]
@@ -567,7 +570,7 @@ class FSMServer:
         try:
             assert self.user_state_dict[name].state == 'wait'
         except:
-            self.sendmsg('error', {'detail': 'state error'}, name=name)
+            self.sendmsg('error', {'detail': 'state error in ready for start'}, name=name)
             return
 
         roomid = self.user_state_dict[name].room
@@ -606,7 +609,7 @@ class FSMServer:
         try:
             assert self.user_state_dict[name].state == 'before_start'
         except:
-            self.sendmsg('error', {'detail': 'state error'}, name=name)
+            self.sendmsg('error', {'detail': 'state error in unready for start'}, name=name)
             return
 
         roomid = self.user_state_dict[name].room
@@ -614,6 +617,8 @@ class FSMServer:
 
         if not thisroom.make_ready(name):
             self.sendmsg('error', {'detail': 'no such player'}, name=name)
+
+        thisroom.players_info[name].ready = False
         self.sendmsg('unready_for_start_reply', {}, name=name)
 
         self.user_state_dict[name].state = 'wait'
@@ -636,7 +641,7 @@ class FSMServer:
         try:
             assert self.user_state_dict[name].state == 'play_a_card'
         except:
-            self.sendmsg('error', {'detail': 'state error'}, name=name)
+            self.sendmsg('error', {'detail': 'state error in my choice'}, name=name)
             return
 
         roomid = self.user_state_dict[name].room
@@ -657,6 +662,7 @@ class FSMServer:
                     for pl in thisroom.players:
                         self.user_state_dict[pl].state = 'trick_before_play'
                     cmd, dict = thisroom.update()
+                    time.sleep(1)
                     self.sendmsg(cmd, dict, roomid=roomid)
                     tar,cmd,dict = thisroom.step()
                     if tar == 'all':
@@ -689,11 +695,13 @@ class FSMServer:
 
         # check state
         try:
-            assert self.user_state_dict[name].state == 'end' or \
-                    self.user_state_dict[name].state == 'room' or \
-                    self.user_state_dict[name].state == 'wait'
+            1+1
+            #print(self.user_state_dict[name].state)
+            #assert self.user_state_dict[name].state == 'end' or \
+            #        self.user_state_dict[name].state == 'room' or \
+            #        self.user_state_dict[name].state == 'wait' or 'before_start'
         except:
-            self.sendmsg('error', {'detail': 'state error'}, name=name)
+            self.sendmsg('error', {'detail': 'state error lichao xianggai'}, name=name)
             return
 
         roomid = self.user_state_dict[name].room
@@ -728,7 +736,7 @@ class FSMServer:
                    self.user_state_dict[name].state == 'wait' or \
                    self.user_state_dict[name].state == 'before_start'
         except:
-            self.sendmsg('error', {'detail': 'state error'}, name=name)
+            self.sendmsg('error', {'detail': 'state error in logout'}, name=name)
             return
 
         roomid = self.user_state_dict[name].room
@@ -741,6 +749,8 @@ class FSMServer:
 
         self.user_state_dict[name].state = 'logout'
         self.sendmsg('logout_reply',{},name=name)
+        self.send_player_info(roomid)
+
 
     def newgame(self,sid,data):
         data = self.strip_data(sid, data)
@@ -834,12 +844,13 @@ class FSMServer:
 
             self.sendmsg('change_place_request_confirm',{'now_place':tar_place},name=name)
             self.sendmsg('ask_change_place_reply',{'success':suc, 'now_place':prt_place},name=tmp)
-
+            self.send_player_info(roomid)
         else:
             prt_place = thisroom.players.index(name)
             tmp = thisroom.players[tar_place]
             self.sendmsg('change_place_request_confirm', {'now_place': prt_place}, name=name)
             self.sendmsg('ask_change_place_reply', {'success': suc, 'now_place': tar_place}, name=tmp)
+
 
     def requestrobotlist(self,sid,data):
         print("Received robot list")
@@ -883,7 +894,7 @@ class FSMServer:
         try:
             assert self.user_state_dict[name].state == 'wait' or 'before_start'
         except:
-            self.sendmsg('error', {'detail': 'state error'}, name=name)
+            self.sendmsg('error', {'detail': ' in add robot'}, name=name)
             return
 
         roomid = self.user_state_dict[name].room
@@ -914,7 +925,7 @@ class FSMServer:
         try:
             assert self.user_state_dict[name].state == 'wait'
         except:
-            self.sendmsg('error', {'detail': 'state error'}, name=name)
+            self.sendmsg('error', {'detail': 'state error in robot switch'}, name=name)
             return
 
         roomid = self.user_state_dict[name].room
@@ -933,6 +944,7 @@ class FSMServer:
             self.send_player_info(roomid)
 
     def cancelrobot(self,sid,data):
+        print('cancel robot received')
         data = self.strip_data(sid, data)
         name = data['user']
 
@@ -948,7 +960,7 @@ class FSMServer:
         try:
             assert self.user_state_dict[name].state == 'wait'
         except:
-            self.sendmsg('error', {'detail': 'state error'}, name=name)
+            self.sendmsg('error', {'detail': 'state error in cancel robot'}, name=name)
             return
 
         roomid = self.user_state_dict[name].room
@@ -956,12 +968,13 @@ class FSMServer:
         rbn = thisroom.players[place]
 
         if not rbn or not self.user_state_dict[rbn].is_robot:
-            self.sendmsg('cancel_robot',{'success':False}, name=name)
+            self.sendmsg('cancel_robot_reply',{'success':False}, name=name)
             return
 
         else:
             self.sendmsg('cancel_player',{'user':rbn},sid = self.family_sid)
             #self.robot_family.cancel_player(rbn)
+            self.sendmsg('cancel_robot_reply',{'success':True},name=name)
             self.send_player_info(roomid)
 
     def requestinfo(self,sid,data):
