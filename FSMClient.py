@@ -46,7 +46,7 @@ class RobotFamily:
         def connect():
             self.sendmsg('update_sid',{'user':''})
             log("connect to server %s" % (pt.url))
-            if self.turn == 100:
+            if self.turn == 10000:
                 for pl in self.members:
                     resnp = np.array(pl.res)
                     print('{} mean:{} var:{}'.format(pl.name,resnp.mean(),math.sqrt(resnp.var())))
@@ -176,7 +176,7 @@ class RobotFamily:
         player.cards_list = copy.deepcopy(data['cards_remain'])
         player.cards_on_table = []
         player.cards_on_table.append(data['trick_start'])
-        player.cards_on_table = copy.deepcopy(data['this_trick'])
+        player.cards_on_table.extend(data['this_trick'])
         player.history = copy.deepcopy(data['history'])
         player.initial_cards = copy.deepcopy(data['initial_cards'])
 
@@ -360,6 +360,9 @@ class RobotFamily:
 
         if not player.state == 'before_start':
             return
+
+        player.history = []
+        player.cards_on_table = []
 
         player.initial_cards = copy.deepcopy(data["cards"])
         player.cards_list = copy.deepcopy(data["cards"])
@@ -571,8 +574,11 @@ class RobotFamily:
 fm = RobotFamily('http://127.0.0.1:5000')
 fm.connect()
 
-
-
-
-
-
+if __name__ == '__main__':
+    fm.create_room(MrGreed)
+    while fm.members[0].room <= 0:
+        pass
+    rmid = fm.members[0].room
+    fm.add_member(rmid,1,MrGreed)
+    fm.add_member(rmid,2,MrGreed)
+    fm.add_member(rmid,3,MrGreed)

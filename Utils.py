@@ -49,7 +49,6 @@ def calc_score(l):
         else:
             s*=2
     return s
-
 # git push https://github.com/Gongzhu-Society/MrIfOffline.git
 # git pull https://github.com/Gongzhu-Society/MrIfOffline.git
 # git add .
