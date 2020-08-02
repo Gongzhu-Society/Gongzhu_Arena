@@ -1,0 +1,274 @@
+<!DOCTYPE HTML>
+
+<html>
+<head>
+  <title id="smalltitle">Let's play cards!</title>
+  <meta chaeset="UTF-8">
+  <style>
+
+  div.relative {
+      position: relative;
+      width: 1200px;
+	  height:100%;
+
+  }
+  div.absolute {
+      position: absolute;
+      top: 0px;
+      left: 0;
+      width: 1200px;
+	  height=100%;
+
+  }
+  div.gametitle {
+      position: absolute;
+      top: 0px;
+      left: 35%;
+      width: 30%;
+	  height=100%;
+	  text-align: center;
+
+  }
+   div.infoarea {
+      position: absolute;
+      top: 120px;
+      left: 60%;
+      width:30%;
+	   height=100%;
+
+  }
+  .button {
+  border: none;
+  color: white;
+  padding: 20px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 16px;
+  margin: 4px 2px;
+  cursor: pointer;
+}
+.buttonmm {
+border-radius: 12px;
+background-color: #4CAF50; /* Green */
+}
+.buttongame {
+border-radius: 12px;
+background-color: #800000; /* Maroon */
+}
+
+.button2 {
+border: none;
+color: black;
+padding: 0.5%;
+text-align: center;
+text-decoration: none;
+display: inline-block;
+font-size: 12;
+width:100%;
+margin: 0.1% 0.12%;
+cursor: pointer;
+background-color: #A9D9AB;
+}
+  .button3 {
+  border: none;
+  color: white;
+  padding: 1%;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 12;
+  width:22.22%;
+  margin: 5% 0.142%;
+  cursor: pointer;
+}
+.buttonmm {
+border-radius: 8%;
+background-color: #4CAF50; /* Green */
+}
+
+  </style>
+</head>
+<body bgcolor="#87CDF4">
+<!--since the canvas is very stupid, elements are drawn on this system directly#87CDF4-->
+  <div id="mainpageDiv" style="display:inline-block;" >
+   <!--welcome girl-->
+   <div class="absolute">
+    <img src="asset/images/welcomegirl-3.png" position="absolute" width="50%" height="auto" left="30%">
+  </div>
+   <!--title-->
+   <div class="gametitle" style="position:absolute;left: 55%; width:30%;top:10%;">
+      <h1>Let's chase the pig!</h1>
+    </div>
+   <!--information area-->
+   <div class="infoarea" style="position:absolute;left: 60%; width:30%;top:40%;">
+
+	<form id="mainpageform">
+     User name: <input id="usernameinput" type="text" style="width:200px;margin:15px"><br>
+     Password: <input id="passwordinput" type="text" style="width:200px;margin:15px"><br>
+    </form>
+
+    <!--<p id="clickme">Click me</p>-->
+  </div>
+	  <div>
+      <button id="signinbutton" class="button buttonmm" style="position:absolute;left: 60%;top:60%;">Sign In</button>
+      <button id="signupbutton" class="button buttonmm" style="position:absolute;left: 70%; top:60%;">Sign Up</button>
+    </div>
+  </div>
+  <div id="hallpageDiv" style="display:none;">
+	 <h2 id="hallmessage" style="position:absolute;left: 40%; width:30%;top:15%;height:100px;">
+	  Welcome to the game hall!</h2>
+	<div id="room-info" style="position:absolute;left: 30%; width:40%;top:30%;height:200px;overflow-y:scroll;">
+      <div >Room Information</div>
+		<div id="roominfotablet">No rooms available</div>
+		<div id="updateroombutton" onclick="ask_for_room_list()">Click to update</div>
+    </div>
+	<div id="hallbuttons">
+	  <button id="threeplayerroom" class="button buttonmm" style="position:absolute;left: 35%; width:10%;top:60%;height:100px;" onclick="createnewroom('T')">New 3 Player Room</button>
+		<button id="fourplayerroom" class="button buttonmm" style="position:absolute;left: 55%; width:10%;top:60%;height:100px;" onclick="createnewroom('Q')">New 4 Player Room</button>
+	  </div>
+  </div>
+
+  <div id="gamepageDiv" style="display:none;">
+
+
+    <div id="hleftname" style="position:absolute;z-index:11;left:10px;top:300px">
+      <h3>Empty</h3>
+    </div>
+    <div id="hrightname" style="position:absolute;z-index:11;left:1050px;top:300px">
+      <h3>Empty</h3>
+    </div>
+    <div id="hoppositename" style="position:absolute;z-index:11;left:150px;top:10px">
+      <h3>Empty</h3>
+    </div>
+    <div id="hmyname" style="position:absolute;z-index:11;left:400px;top:400px">
+      <h3>Empty</h3>
+    </div>
+    <button id="confirmbutton" class="button buttongame" style="display:none;position:absolute;z-index:13;left:500px;top:400px" onclick="confirmed()">Confirm</button>
+    <button id="canclebutton" class="button buttongame" style="display:none;position:absolute;z-index:13;left:700px;top:400px" onclick="cancled()">Cancel</button>
+    <button id="exitbutton" class="button buttongame" style="display:none;position:absolute;z-index:13;left:10px;top:10px" onclick="exited()">Exit</button>
+    <div id="gamemsg" style="position:absolute;z-index:13;left:400px;top:200px;width:600px;display:none;">
+      <h2>You selected nothing!</h2>
+    </div>
+
+  <!--all cards: used but unseen in most cases. The sub-coordinate system is identical to its father-->
+  <img id='cdSA' src='asset/images/pukeImage/SA.jpg'style="display:none" onclick="cardclicked('SA')" >
+  <img id='cdS2' src='asset/images/pukeImage/S2.jpg'style="display:none" onclick="cardclicked('S2')" >
+  <img id='cdS3' src='asset/images/pukeImage/S3.jpg'style="display:none" onclick="cardclicked('S3')" >
+  <img id='cdS4' src='asset/images/pukeImage/S4.jpg'style="display:none" onclick="cardclicked('S4')" >
+  <img id='cdS5' src='asset/images/pukeImage/S5.jpg'style="display:none" onclick="cardclicked('S5')" >
+  <img id='cdS6' src='asset/images/pukeImage/S6.jpg'style="display:none" onclick="cardclicked('S6')" >
+  <img id='cdS7' src='asset/images/pukeImage/S7.jpg'style="display:none" onclick="cardclicked('S7')" >
+  <img id='cdS8' src='asset/images/pukeImage/S8.jpg'style="display:none" onclick="cardclicked('S8')" >
+  <img id='cdS9' src='asset/images/pukeImage/S9.jpg'style="display:none" onclick="cardclicked('S9')" >
+  <img id='cdS10' src='asset/images/pukeImage/S10.jpg'style="display:none" onclick="cardclicked('S10')" >
+  <img id='cdSJ' src='asset/images/pukeImage/SJ.jpg'style="display:none" onclick="cardclicked('SJ')" >
+  <img id='cdSQ' src='asset/images/pukeImage/SQ.jpg'style="display:none" onclick="cardclicked('SQ')" >
+  <img id='cdSK' src='asset/images/pukeImage/SK.jpg'style="display:none" onclick="cardclicked('SK')" >
+  <img id='cdCA' src='asset/images/pukeImage/CA.jpg'style="display:none" onclick="cardclicked('CA')" >
+  <img id='cdC2' src='asset/images/pukeImage/C2.jpg'style="display:none" onclick="cardclicked('C2')" >
+  <img id='cdC3' src='asset/images/pukeImage/C3.jpg'style="display:none" onclick="cardclicked('C3')" >
+  <img id='cdC4' src='asset/images/pukeImage/C4.jpg'style="display:none" onclick="cardclicked('C4')" >
+  <img id='cdC5' src='asset/images/pukeImage/C5.jpg'style="display:none" onclick="cardclicked('C5')" >
+  <img id='cdC6' src='asset/images/pukeImage/C6.jpg'style="display:none" onclick="cardclicked('C6')" >
+  <img id='cdC7' src='asset/images/pukeImage/C7.jpg'style="display:none" onclick="cardclicked('C7')" >
+  <img id='cdC8' src='asset/images/pukeImage/C8.jpg'style="display:none" onclick="cardclicked('C8')" >
+  <img id='cdC9' src='asset/images/pukeImage/C9.jpg'style="display:none" onclick="cardclicked('C9')" >
+  <img id='cdC10' src='asset/images/pukeImage/C10.jpg'style="display:none" onclick="cardclicked('C10')" >
+  <img id='cdCJ' src='asset/images/pukeImage/CJ.jpg'style="display:none" onclick="cardclicked('CJ')" >
+  <img id='cdCQ' src='asset/images/pukeImage/CQ.jpg'style="display:none" onclick="cardclicked('CQ')" >
+  <img id='cdCK' src='asset/images/pukeImage/CK.jpg'style="display:none" onclick="cardclicked('CK')" >
+  <img id='cdDA' src='asset/images/pukeImage/DA.jpg'style="display:none" onclick="cardclicked('DA')" >
+  <img id='cdD2' src='asset/images/pukeImage/D2.jpg'style="display:none" onclick="cardclicked('D2')" >
+  <img id='cdD3' src='asset/images/pukeImage/D3.jpg'style="display:none" onclick="cardclicked('D3')" >
+  <img id='cdD4' src='asset/images/pukeImage/D4.jpg'style="display:none" onclick="cardclicked('D4')" >
+  <img id='cdD5' src='asset/images/pukeImage/D5.jpg'style="display:none" onclick="cardclicked('D5')" >
+  <img id='cdD6' src='asset/images/pukeImage/D6.jpg'style="display:none" onclick="cardclicked('D6')" >
+  <img id='cdD7' src='asset/images/pukeImage/D7.jpg'style="display:none" onclick="cardclicked('D7')" >
+  <img id='cdD8' src='asset/images/pukeImage/D8.jpg'style="display:none" onclick="cardclicked('D8')" >
+  <img id='cdD9' src='asset/images/pukeImage/D9.jpg'style="display:none" onclick="cardclicked('D9')" >
+  <img id='cdD10' src='asset/images/pukeImage/D10.jpg'style="display:none" onclick="cardclicked('D10')" >
+  <img id='cdDJ' src='asset/images/pukeImage/DJ.jpg'style="display:none" onclick="cardclicked('DJ')" >
+  <img id='cdDQ' src='asset/images/pukeImage/DQ.jpg'style="display:none" onclick="cardclicked('DQ')" >
+  <img id='cdDK' src='asset/images/pukeImage/DK.jpg'style="display:none" onclick="cardclicked('DK')" >
+  <img id='cdHA' src='asset/images/pukeImage/HA.jpg'style="display:none" onclick="cardclicked('HA')" >
+  <img id='cdH2' src='asset/images/pukeImage/H2.jpg'style="display:none" onclick="cardclicked('H2')" >
+  <img id='cdH3' src='asset/images/pukeImage/H3.jpg'style="display:none" onclick="cardclicked('H3')" >
+  <img id='cdH4' src='asset/images/pukeImage/H4.jpg'style="display:none" onclick="cardclicked('H4')" >
+  <img id='cdH5' src='asset/images/pukeImage/H5.jpg'style="display:none" onclick="cardclicked('H5')" >
+  <img id='cdH6' src='asset/images/pukeImage/H6.jpg'style="display:none" onclick="cardclicked('H6')" >
+  <img id='cdH7' src='asset/images/pukeImage/H7.jpg'style="display:none" onclick="cardclicked('H7')" >
+  <img id='cdH8' src='asset/images/pukeImage/H8.jpg'style="display:none" onclick="cardclicked('H8')" >
+  <img id='cdH9' src='asset/images/pukeImage/H9.jpg'style="display:none" onclick="cardclicked('H9')" >
+  <img id='cdH10' src='asset/images/pukeImage/H10.jpg'style="display:none" onclick="cardclicked('H10')" >
+  <img id='cdHJ' src='asset/images/pukeImage/HJ.jpg'style="display:none" onclick="cardclicked('HJ')" >
+  <img id='cdHQ' src='asset/images/pukeImage/HQ.jpg'style="display:none" onclick="cardclicked('HQ')" >
+  <img id='cdHK' src='asset/images/pukeImage/HK.jpg'style="display:none" onclick="cardclicked('HK')" >
+
+    <img id='cdJG' src='asset/images/pukeImage/JG.jpg' style="display:none" onclick="cardclicked('JG')">
+    <img id='cdJP' src='asset/images/pukeImage/JP.jpg' style="display:none" onclick="cardclicked('JP')">
+    <img id='cdBK' src='asset/images/pukeImage/BK.png' style="display:none" onclick="cardclicked('BK')">
+    <img id='handpic' src='asset/images/myhand.png' style="display:none" >
+
+  </div>
+
+
+  <!--since the canvas is very stupid, elements are drawn on this system directly-->
+	<div id="roompageDiv" style="display:none" bgcolor="#87CDF4">
+  <div style="position:absolute;left:7%;top:2%;width:80;" >
+	  <button id="exitroom" class="buttongame" onclick ="quiterchambre()">Exit</button>
+  </div>
+  <div style="position:absolute;left:10%;top:15%;width:80;" >
+      <img id="southplayerimage" onclick="clickimage(0)" src="asset/images/aiimage/noirfemme.png"   width="20%" height="auto">
+  	   <img id="eastplayerimage" onclick="clickimage(1)" src="asset/images/aiimage/noirhomme.png"   width="20%" height="auto">
+  	   <img id="northplayerimage" onclick="clickimage(2)" src="asset/images/aiimage/noirfemme.png"   width="20%" height="auto">
+  	   <img id="westplayerimage" onclick="clickimage(3)" src="asset/images/aiimage/noirhomme.png"   width="20%" height="auto">
+  </div>
+
+     <!--title-->
+     <div style="position:absolute;left:45%;top:2%;">
+        <h1 id="nomdechambre">Room1</h1>
+  </div>
+  <div id="lowbox" style="position:absolute;left:10%;top:65%;width:80%">
+    <div id="southplayername" style="position:absolute;left:0%;top:0%;width:25%;text-align: center;">Empty</div>
+  	<div id="eastplayername" style="position:absolute;left:22.22%;top:0%;width:25%;text-align: center;">Empty</div>
+  	<div id="northplayername" style="position:absolute;left:44.44%;top:0%;width:25%;text-align: center;">Empty</div>
+  	<div id="westplayername" style="position:absolute;left:66.66%;top:0%;width:25%;text-align: center;">Empty</div>
+
+  </div>
+  <div style="position:absolute;left:10%;top:68%;width:80%">
+  	<button id="southadd" class="button3 buttonmm" onclick="addrobot(0)">Add new robot</button>
+  	<button id="eastadd" class="button3 buttonmm" onclick="addrobot(1)">Add new robot</button>
+  	<button id="northadd" class="button3 buttonmm" onclick="addrobot(2)">Add new robot</button>
+  	<button id="westadd" class="button3 buttonmm" onclick="addrobot(3)">Add new robot</button>
+  </div>
+<div style="position:absolute;left:10%;top:75%;width:80%">
+
+  	<button id="setready" style="position:absolute;left:70%;width:10%;" class="button3 buttonmm" onclick="changereadystate()">Ready</button>
+
+  </div>
+<h2 id="roommessage" style="position:absolute;left:10%;width:60%;top:80%">You entered the room. Click an empty slot to sit down.</h2>
+  <div id="robotinfo" style="position:absolute;width:20%;height:50%;left:40%;top:20%;background-color:  #A9D9AB;overflow-y:scroll;display:none;zIndex:10;">
+        <div>Robots available:</div>
+
+  	<button id="robot1" class="button2">Mr. random</button>
+  	<button id="robot2" class="button2">Mr. if</button>
+  	<button id="robot3" class="button2">Mr. MCTS</button>
+	<button id="cancle" class="button2">Cancel</button>
+      </div>
+     <!--information area-->
+</div>
+
+      <!--<p id="clickme">Click me</p>-->
+
+
+
+
+
+
+<script src="src/websocketlib.js"></script>
+<script src="src/index.js" charset="UTF-8"></script>
+
+</body>
+
+</html>
