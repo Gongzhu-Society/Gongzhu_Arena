@@ -1,0 +1,164 @@
+Agent: player (robot or human)
+Client: FSMClient
+Server: FSMServer
+
+State Transsion and Agent Signal:
+# if an Agent Signal is writen in capital, it means not a real agent behavior, but a server information
+# so it usually starts with server send sth with no reply
+# if an Agent Signal include a reply, you must change state after receiving a 'right' reply
+
+1, logout->login
+    a. login
+    Client send: 'login',{"user":"name","user_pwd":"pwd"}
+    # -TODO
+    Server reply: 'login_reply',{"user":"name","isgod":1}
+
+2, login->room
+    a. enter room
+    Client send: 'enter_room',{"user":"name","room": 123}
+    Server reply: 'enter_room_reply',{"user":"name","game_state":"available" or "full" or "started", "players":[['Coucou',True],['Mrif',False],...]}
+
+2.25 room -> room
+    a. request room list
+    Client send: 'request_room_list',{'user':name, 'range'=[begin,end]}
+    Server reply:'request_room_list_reply',{'user':name, 'list' = [0,1,2,3...]}
+    # 0: not exist
+    # 1: available
+    # 2: full
+    # 3: started
+
+2.5, login->wait
+    a. create room
+        # god cannot create room
+        Client send: 'create_room',{"user":"name","room":"Q" or "T"}
+        Server reply: 'create_room_reply',{"user":"name","room_id":id,"players":[['user_name',False],['',False],['',False],['',False]]}
+
+3, room -> wait
+    a. choose place
+    # god does not send this message, server does not reply to god
+    Client send: 'choose_place',{"user":"name","room":123, place:0}
+    Server reply: 'choose_place_reply',{"user":"name","success": True}
+
+3.1, room -> wait
+# God sits at any place greater than 3, and is automaticlly ready
+    a. choose place
+    Client send: 'choose_place',{"user":"name","room":123, place:4}
+    Server reply: 'choose_place_reply',{"user":"name","success": True}
+
+
+4, wait -> before_start
+    a. ready for start
+    # -TODO: some adjustments on server
+    Client send: 'ready_for_start', {'user':'name'}
+    Server reply: 'ready_for_start_reply', {'user':'name'}
+    **b. TIMEOUT
+    Server send: 'wait_time_out', {"user":name}
+
+5, before_start -> trick_before_play
+    a. WAITING
+    # -TODO: send every thing to god
+    Server send: 'shuffle', {"user":name,"cards":["SA","H2","D3","C4",...]}
+
+6, trick_before_play -> trick_before_play
+    a. UPDATE
+    Server send: 'update',{'user':name,'this_trick':[...],'trick_start'}
+
+7, trick_before_play -> play_a_card
+    a. YOUR TURN
+    Server send: 'your_turn',{'user':name,'suit':'S'}
+    # this message automatically triggers a timer on client
+
+8, play_a_card -> trick_after_play
+    a. pick a card
+    Client send: 'my_choice',{'user':name,"card":"SQ"}
+    # this message will be automatically sent if time limit is reached, in which case "card" will be "timeout"
+    # -TODO:    
+    Server reply: 'my_choice_reply',{'user':name, 'legal':True, 'your_remain':[], 'your_card':'SQ'}
+
+9, trick_after_play -> trick_after_play
+    a. UPDATE
+    Server send: 'update',{'user':name,'this_trick':[...],'trick_start'}
+
+9.1, trick_after_play -> trick_after_play
+    a. UPDATE
+    Server send: 'update-god',{'user':name,'this_trick':[...],'trick_start','hands':[[...],[...],[...],[...]]}
+
+10, trick_after_play -> trick_before_play
+    a. TRICK END
+    Server send: 'trick_end':{'user':name,'"winner":0,'scores':[[...],[...],[...],[...]]}
+
+11, trick_befor_play -> end
+    # QUESTION
+    a. GAME END
+    Server send: 'game_end', {'user':name,'scores':[[有分的牌],[],[],[]],'scores_num':[[0],[0],[0],[50]]}
+
+12, end -> logout
+    a.logout
+    Client send: 'logout', {'user':name}
+    Server reply: 'logout_reply', {'user':name}
+
+13, end -> login
+    a. leave room
+    Client send: 'leave_room', {'user':name}
+    Server reply: 'leave_room_reply', {'user':name}
+
+14, end -> wait
+    a. new game
+    Client send: 'new_game', {'user':name}
+    Server reply: 'new_game_reply', {'user':name}
+
+15, wait -> wait
+    a. PLAYER INFO
+    Server send: 'player_info', {"user":name,"players":[["player1_name",ready],["player2_name",ready],...]}
+
+*16 wait - > wait
+#a special behavior of exchange place:
+    a. ask change place
+    Client send: 'ask_change_place', {'user':name,'target_place':0}
+    Server reply: 'ask_change_place_reply',{'user':name, 'success':True, 'now_place':0}
+
+    b. ASKED CHANGE PLACE
+    Server send: 'change_place_request',{'user':name, 'requests':[request_player_name, place]}
+    Client reply: 'change_place_request_reply',{'user':name, 'success':True, 'target_place':2}
+    Server reply: 'change_place_request_confirm',{'user':name, 'now_place':0}
+
+*17 wait -> wait
+    a0. request robot list
+    Client send: 'request_robot_list', {'user':name}
+    Server reply: 'request_robot_list_reply', {'user':name, 'robot_list':['rb1',...], **'robot_pic':[...]}
+    a. add robot
+    Client send: 'add_robot',{'user':name, 'robot':'Mrif', 'place':0)
+    Server reply: 'add_robot_reply',{'user':name, 'success':True}
+    b. cancel robot
+    Client send: 'cancel_robot',{'user':name, 'place':0}
+    Server reply: 'cancel_robot',{'user':name, 'success':True}
+    c. ROBOT COME IN
+    Server send: 'robot_come_in',{'user':name, 'robot_name':name, 'place':0, 'master':add_robot_player}
+    d. robot switch
+    Client send: 'robot_switch',{'user':name, 'robot_place':[pl1,pl2]}
+    Server reply: 'robot_switch',{'user':name, 'success': True}
+
+**18 EXCEPT END -> logout
+    #interrupt
+    a. interrupt
+    Client send: 'interrupt', {'user':name}
+    Server reply: 'interrupt_reply', {'user':name}
+    b. EXTREMELY TIME OUT
+    Server send: 'kick out', {'user':name}
+
+**19 IN GAME STATE -> room
+    #other player interrupt
+    a. INTERRUPT
+    Server send: 'game_interrupt',{'user':name, 'interrupt_player':name}
+
+***20 logout -> IN GAME STATE
+    # reconnect
+    a. reconnect
+    Client send: 'reconnect',{'user':name}
+    Server reply: 'reconnect_success',{'user':name, 'you_cards':[],
+     'you_init_cards':[],'history':[], 'cards_on_table':[]}
+    or
+    Server reply: 'reconnect_failure',{'user':name}
+
+
+
