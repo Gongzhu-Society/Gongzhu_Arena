@@ -1,0 +1,22 @@
+git add file_name -v #新建一个文件时，让git追踪这个文件
+                     #可以使用*.py表示所有以.py结尾的文件
+                     # v表示verbose，输出详细信息
+git add -uv          #更改git正在追踪文件后，告诉git我更新了
+                     # u表示只更新正在追踪的文件
+                     #与之相对的，网上教的git add .就会把当前文件夹下所有乱七八糟的东西，log啊，__pycache__啊，都加进去，非常不优雅
+git commit           #git add之后，告诉git我确认这些更改没问题
+git push             #git commit之后，告诉git推到github上
+git pull             #github有更新，拉取到本地
+
+例：
+孙悠然新建了这个git_tutorial.txt，那他第一次上传要依次用如下命令
+
+git add git_tutorial.txt -v
+git commit
+git push
+
+之后他更新这个文件再上传需要用如下命令
+
+git add -uv
+git commit
+git push
