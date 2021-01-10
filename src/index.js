@@ -54,7 +54,7 @@ window.onload = function(){
   //Cards shown on the table
    var chambrename='testroom';
    var myname='Dieu';
-   var isgod = true;
+   var isgod = false;
    var mypassword;
    var gameMessage;
    var mylocation=0;
@@ -582,6 +582,10 @@ window.onload = function(){
   socket.on('login_reply', function(rdata){
     var data = JSON.parse(rdata);
     gamestate = 'inhall'
+    if(data.is_god==1){
+      isgod = true;
+      //alert('god logged in');
+    }
     grandupdate();
   })
 
