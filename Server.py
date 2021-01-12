@@ -431,7 +431,6 @@ class FSMServer:
     def login(self,sid,data):
         data = self.strip_data(sid, data)
         name = data['user']
-
         '''
         TODO: add pwd check
         '''
@@ -445,13 +444,9 @@ class FSMServer:
         if 'is_robot' in data:
             self.user_state_dict[name].is_robot = True
             self.user_state_dict[name].robot_type = data['robot_type']
-        if 'user_pwd' in data:
-            password = data['user_pwd']
-            if password == 'liebeyy' and name == 'Dieu':
-                self.user_state_dict[name].is_god = True
-                self.sendmsg('login_reply', {'is_god':1}, name=name)
-                return
-        self.sendmsg('login_reply',{'is_god':0},name=name)
+        if 'is_god' in data:
+            self.user_state_dict[name].is_god = True
+        self.sendmsg('login_reply',{},name=name)
 
     def requestroomlist(self,sid,data):
         data = self.strip_data(sid, data)
