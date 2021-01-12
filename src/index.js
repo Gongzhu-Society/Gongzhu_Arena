@@ -53,7 +53,8 @@ window.onload = function(){
    var socket=io();
   //Cards shown on the table
    var chambrename='testroom';
-   var myname;
+   var myname='Dieu';
+   var isgod = false;
    var mypassword;
    var gameMessage;
    var mylocation=0;
@@ -70,6 +71,9 @@ window.onload = function(){
    var leftpoint=['H6'];
    var oppositepoint=['H4','HJ','HQ','SQ'];
    var rightpoint=['H5','HA','JG'];
+   var lefthand = ['C6','H7','C10','D2','D3','D4','D5','D6','D7'];
+   var oppositehand = ['H8','H9','D8','D9'];
+   var righthand = ['H10','C2','C3'];
    var lastroundleft='SA';
    var lastroundright='S10';
    var lastroundme='S3';
@@ -80,7 +84,8 @@ window.onload = function(){
    var cardheight=105;
    var itemssurtable=[];
    var players_in_room=[['', false, true],['', false, true],['', false, true],['', false, true]];
-
+   var timemessage = "";
+   var timeremain = 30;
    var all_images = ['Miss.random', 'Miss.if', 'R18', 'Mr.Greed']
    const tout_direction = ['south', 'east', 'north', 'west']
 
@@ -211,7 +216,213 @@ window.onload = function(){
         itemssurtable.push('cd'+lastroundopposite);
       }
      }
+  drawgodscards = function(){
+        //player's cards:
+        var hinterval=CW/12;
+        var hstartx=CW*7/16-hinterval*turnsleft*0.5;
+        var hendx=CW*7/16+hinterval*turnsleft*0.5;
+        var startlevel=sealevel+1;
+        if (hendx>0.6*CW){
+          hstartx=CW*7/8-0.6*CW;
+          hinterval=CW*(0.6-7/16)/(0.5*turnsleft);
+          hendx=0.6*CW;
+        }
+        hstarty=CH*0.98-cardheight;
 
+        //draw the hand
+        turnsleft=handcardsleft.length
+        if (turnsleft>0){
+          loadThenDisplayImage2('handpic', hstartx-0.01*CW,hstarty-0.02*CH,1.01*(hinterval*(turnsleft-1)+cardwidth)+0.02*CW,1.2*cardheight,startlevel);
+          itemssurtable.push('handpic');
+          startlevel++;
+        }
+
+        for (var i=0;i<handcardsleft.length;i++){
+   		//console.log('card to draw: '+handcardsleft[i]);
+           loadThenDisplayImage2('cd'+handcardsleft[i], hstartx+hinterval*i,hstarty,cardwidth,cardheight,startlevel);
+           itemssurtable.push('cd'+handcardsleft[i]);
+           startlevel++;
+           //document.getElementById('cd'+handcardsleft[i]).addEventListener("click", showcontent(handcardsleft[i]));
+         }
+
+         //player's point cards
+         var ptl=mypointcards.length;
+         startlevel=sealevel+1;
+         if (ptl>0){
+           var ptstartx=hendx*1.1;
+           var ptinterval=CW*5/8/(ptl);
+
+           if (ptstartx+ptl*ptinterval>7*CW/8){
+               ptinterval=(7*CW/8-ptstartx)/ptl;
+           }
+
+           var ptstarty=hstarty;
+           for (var i=0;i<ptl;i++){
+              //console.log('asset/images/pukeImage/'+handcardsleft[i]+'.jpg; startx:'+Number(startx+interval*i)+'; starty:'+starty);
+              loadThenDisplayImage2('cd'+mypointcards[i], Number(ptstartx)+Number(ptinterval*i),ptstarty,cardwidth,cardheight,startlevel);
+              itemssurtable.push('cd'+mypointcards[i]);
+              startlevel++;
+            }
+         }
+         //player's last round played cards:
+         if (lastroundme!='NA'){
+           loadThenDisplayImage2('cd'+lastroundme,CW/2-cardwidth/2,(CH-2*cardheight)*0.9,cardwidth,cardheight,sealevel+1);
+           itemssurtable.push('cd'+lastroundme);
+         }
+
+
+         //left player's hand
+         leftplayerleft=lefthand.length
+         var hinterval=CW/12;
+         var hstartx=CW*0.01;
+         var hendx=CW*0.02+hinterval*leftplayerleft;
+         var startlevel=sealevel+1;
+         if (hendx>0.28*CW){
+           hinterval=(CW*(0.28-0.02))/(leftplayerleft);
+           hendx=0.28*CW;
+         }
+         hstarty=0.28*CH;
+
+
+         if (leftplayerleft>0){
+           loadThenDisplayImage2('handpic1', hstartx-0.01*CW,hstarty-0.02*CH,1.01*(hinterval*(leftplayerleft-1)+cardwidth)+0.02*CW,1.2*cardheight,startlevel);
+           itemssurtable.push('handpic1');
+           startlevel++;
+         }
+
+         for (var i=0;i<lefthand.length;i++){
+    		//console.log('card to draw: '+handcardsleft[i]);
+            loadThenDisplayImage2('cd'+lefthand[i], hstartx+hinterval*i,hstarty,cardwidth,cardheight,startlevel);
+            itemssurtable.push('cd'+lefthand[i]);
+            startlevel++;
+            //document.getElementById('cd'+handcardsleft[i]).addEventListener("click", showcontent(handcardsleft[i]));
+          }
+
+         //left player's point cards:
+         var lptl=leftpoint.length;
+         startlevel=sealevel+1;
+         if (lptl>0){
+           var lptstartx=0;
+           var lptinterval=CW/12;
+
+           if (lptl*lptinterval>CW*0.3-cardwidth){
+               lptinterval=(CW*0.3-cardwidth)/lptl;
+           }
+
+           var lptstarty=CH*0.5;
+           for (var i=0;i<lptl;i++){
+              loadThenDisplayImage2('cd'+leftpoint[i], Number(lptstartx)+Number(lptinterval*i),lptstarty,cardwidth,cardheight,startlevel);
+              itemssurtable.push('cd'+leftpoint[i]);
+              startlevel++;
+            }
+         }
+         if (lastroundleft!='NA'){
+           loadThenDisplayImage2('cd'+lastroundleft,CW*0.4, (CH/2-0.5*cardheight),cardwidth,cardheight,sealevel+1);
+           itemssurtable.push('cd'+lastroundleft);
+         }
+
+         //right player's hand
+         rightplayerleft=righthand.length
+         var hinterval=CW/12;
+         var hstartx=CW*0.7;
+         var hendx=CW*0.7+hinterval*leftplayerleft;
+         var startlevel=sealevel+1;
+         if (hendx>0.9*CW){
+           hinterval=CW*(0.2)/(leftplayerleft);
+           hendx=0.9*CW;
+         }
+         hstarty=0.28*CH;
+
+
+         if (rightplayerleft>0){
+           loadThenDisplayImage2('handpic2', hstartx-0.01*CW,hstarty-0.02*CH,1.01*(hinterval*(rightplayerleft-1)+cardwidth)+0.02*CW,1.2*cardheight,startlevel);
+           itemssurtable.push('handpic2');
+           startlevel++;
+         }
+
+         for (var i=0;i<righthand.length;i++){
+         //console.log('card to draw: '+handcardsleft[i]);
+            loadThenDisplayImage2('cd'+righthand[i], hstartx+hinterval*i,hstarty,cardwidth,cardheight,startlevel);
+            itemssurtable.push('cd'+righthand[i]);
+            startlevel++;
+            //document.getElementById('cd'+handcardsleft[i]).addEventListener("click", showcontent(handcardsleft[i]));
+          }
+         //right player's point drawcardsvar lptl=leftpoint.length;
+         var rptl=rightpoint.length;
+         startlevel=sealevel+1;
+         if (rptl>0){
+           var rptstartx=CW*0.7;;
+           var rptinterval=CW/12;
+
+           if (rptl*rptinterval>CW*0.2){
+               rptinterval=(CW*0.2)/rptl;
+           }
+
+           var rptstarty=CH*0.5;
+           for (var i=0;i<rptl;i++){
+              loadThenDisplayImage2('cd'+rightpoint[i], Number(rptstartx)+Number(rptinterval*i),rptstarty,cardwidth,cardheight,startlevel);
+              startlevel++;
+              itemssurtable.push('cd'+rightpoint[i]);
+            }
+         }
+         if (lastroundright!='NA'){
+           loadThenDisplayImage2('cd'+lastroundright,CW*0.6-cardwidth, (CH/2-0.5*cardheight),cardwidth,cardheight,sealevel+1);
+           itemssurtable.push('cd'+lastroundright);
+         }
+
+         // opposite player's hand
+         oppoturnsleft = oppositehand.length;
+         var hinterval=CW/12;
+         var hstartx=CW*7/16-hinterval*oppoturnsleft*0.5;
+         var hendx=CW*7/16+hinterval*oppoturnsleft*0.5;
+         var startlevel=sealevel+1;
+         if (hendx>0.6*CW){
+           hstartx=CW*7/8-0.6*CW;
+           hinterval=CW*(0.6-7/16)/(0.5*oppoturnsleft);
+           hendx=0.6*CW;
+         }
+         hstarty=CH*0.02;
+
+         //draw the hand
+
+         if (oppoturnsleft>0){
+           loadThenDisplayImage2('handpic3', hstartx-0.01*CW,hstarty-0.02*CH,1.01*(hinterval*(oppoturnsleft-1)+cardwidth)+0.02*CW,1.2*cardheight,startlevel);
+           itemssurtable.push('handpic3');
+           startlevel++;
+         }
+
+         for (var i=0;i<oppoturnsleft;i++){
+    		//console.log('card to draw: '+handcardsleft[i]);
+            loadThenDisplayImage2('cd'+oppositehand[i], hstartx+hinterval*i,hstarty,cardwidth,cardheight,startlevel);
+            itemssurtable.push('cd'+oppositehand[i]);
+            startlevel++;
+            //document.getElementById('cd'+handcardsleft[i]).addEventListener("click", showcontent(handcardsleft[i]));
+          }
+
+         // opposite player's points
+
+         var optl=oppositepoint.length;
+         startlevel=sealevel+1;
+         if (optl>0){
+           var optstartx=hendx*1.1;
+           var optinterval=CW*5/8/(optl);
+
+           if (optstartx+optl*optinterval>7*CW/8){
+               optinterval=(7*CW/8-optstartx)/optl;
+           }
+
+           var optstarty=CH*0.02;
+           for (var i=0;i<optl;i++){
+              loadThenDisplayImage2('cd'+oppositepoint[i], Number(optstartx)+Number(optinterval*i),optstarty,cardwidth,cardheight,startlevel);
+              startlevel++;
+              itemssurtable.push('cd'+oppositepoint[i]);
+            }
+         }
+         if (lastroundopposite!='NA'){
+           loadThenDisplayImage2('cd'+lastroundopposite,CW/2-cardwidth/2, (1.3*cardheight),cardwidth,cardheight,sealevel+1);
+           itemssurtable.push('cd'+lastroundopposite);
+         }
+        }
   clearitems = function() {
    //alert(itemssurtable.length);
    //console.log('itemssurtable has '+itemssurtable.length+'elements');
@@ -276,12 +487,23 @@ window.onload = function(){
     document.getElementById('canclebutton').style.display='none';
     document.getElementById('exitbutton').style.display='none';
     document.getElementById('confirmbutton').style.display='none';
-    drawcards();
+    if(isgod){
+      drawgodscards();
+    }
+    else{
+      drawcards();
+    }
+
   }
 
   updategametablethinking = function(){
   clearitems();
-  drawcards();
+  if(isgod){
+    drawgodscards();
+  }
+  else{
+    drawcards();
+  }
   document.getElementById('gamemsg').style.display='';
   document.getElementById('gamemsg').innerHTML=gameMessage;
   document.getElementById('canclebutton').style.display='none';
@@ -360,6 +582,10 @@ window.onload = function(){
   socket.on('login_reply', function(rdata){
     var data = JSON.parse(rdata);
     gamestate = 'inhall'
+    if(data.is_god==1){
+      isgod = true;
+      //alert('god logged in');
+    }
     grandupdate();
   })
 
@@ -435,7 +661,7 @@ window.onload = function(){
       gameMessage='<h2>You entered room ' + chambrename + '. There are '+data.players.length+' player(s).  Click exit to exit this room</h2>';
 
       gamestate='inroom';
-
+      document.getElementById("hrightname").style.top="400px";
       for (var i=0;i<data.players.length;i++){
         if (i==0){
           document.getElementById("southplayername").innerHTML='South: '+data.players[i];
@@ -743,7 +969,8 @@ window.onload = function(){
       else{
         gameMessage='<h2>Your turn!</h2>';
       }
-
+      timeremain = 32;
+      timecounter = setInterval(function(){count_down()}, 1000)
       gamestate='ingame-thinking';
       grandupdate();
   })
@@ -908,6 +1135,7 @@ window.onload = function(){
           gamestate='ingame-wait';
           gameMessage='<h2>Confirmed! Waiting for server response...</h2>'
           socket.emit('my_choice',JSON.stringify({user:myname, room:chambrename, card:toplay, place:mylocation}));
+          clearInterval(timecounter);
           grandupdate();
       }
       else if (gamestate=='ingame-gameover') {
@@ -996,6 +1224,31 @@ window.onload = function(){
     socket.emit('add_robot',JSON.stringify({user:myname, room:chambrename, robot:which_robot, place:add_robot_place }));
   }
 
+  count_down = function(){
+    timeremain--;
+    var appearance = timeremain - 2;
+    if(appearance<0){
+      appearance = 0;
+    }
+    if (isgod){
+      gameMessage='<h2>The player has '+appearance+' seconds to make a decision.</h2>';
+
+    }
+    else{
+      gameMessage='<h2>Your have '+appearance+' seconds to make a decision.</h2>';
+    }
+
+    grandupdate();
+    if(timeremain<0){
+      clearInterval(timecounter);
+      if(! isgod){
+        gamestate='ingame-wait';
+        gameMessage='<h2>Timeout, Miss. random will play on your behalf.</h2>'
+        socket.emit('my_choice',JSON.stringify({user:myname, room:chambrename, card:"", place:mylocation}));
+        grandupdate();
+      }
+    }
+  }
   //general handler
   determine_relative_position = function(){
     if (numberofplayer==3){
@@ -1027,6 +1280,6 @@ window.onload = function(){
   var roomstate='undefined'
   var readystate='unready'
   console.log(gamestate);
-
+  //grandupdate();
 }
 //The game page
