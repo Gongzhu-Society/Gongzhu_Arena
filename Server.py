@@ -185,6 +185,16 @@ class RoomHoster:
             return 1
         if usr_loc != self.now_player:
             return 'error', {'detail': 'not your turn'}
+
+        if card == 'timeout':
+            cdlist = self.players_info[name].cards_list
+            lglist = [i for i in cdlist if i[0] == self.cards_on_table[1][0]]
+            if usr_loc == self.trick_start or not len(lglist):
+                # the first player
+                card = random.choice(cdlist)
+            else:
+                card = random.choice(lglist)
+
         if card not in self.players_info[name].cards_list:
             return 'error', {'detail': 'not your card'}
 
@@ -394,6 +404,10 @@ class FSMServer:
         def request_info(sid,data):
             self.requestinfo(sid,data)
 
+        @self.sio.on('request_group_info')
+        def request_group_info(sid,data):
+            self.requestgroupinfo(sid,data)
+
         @self.sio.event
         def connect(sid, environ):
             # environ 基本就是 headers 加上一些杂七杂八的东西
@@ -482,7 +496,7 @@ class FSMServer:
         self.sendmsg("godin_reply", {
             "game_state": thisroom.room_state, "players": self.get_players_info(roomid)}, name=name)
 
-    def godin(self,sid,data):
+    def godout(self,sid,data):
         data = self.strip_data(sid,data)
         name = data['user']
         try:
@@ -699,8 +713,9 @@ class FSMServer:
             return
 
         roomid = self.user_state_dict[name].room
-        cd = data['card']
         thisroom = self.rooms[roomid]
+        cd = data['card']
+
         #time.sleep(0.1)
         cmd,dict = thisroom.play_a_card(name,cd)
         self.sendmsg(cmd,dict,name=name)
@@ -1031,6 +1046,48 @@ class FSMServer:
             self.sendmsg('cancel_robot_reply',{'success':True},name=name)
             self.send_player_info(roomid)
 
+    def requestgroupinfo(self,sid,data):
+        data = self.strip_data(sid, data)
+
+        # check form
+        try:
+            assert 'user_list' in data
+            user_list = data['user_list']
+        except:
+            self.sendmsg('error', {'detail': 'request info error'}, name=name)
+            return
+
+        cmd = 'request_group_info_reply'
+        dict = {}
+        dict['user_list'] = user_list
+        for name in user_list:
+            dict_ = {}
+            if name in self.user_state_dict:
+                usrinfo = self.user_state_dict[name]
+            else:
+                dict_['state'] = 'logout'
+                dict[name] = dict_
+                continue
+
+            roomid = usrinfo.room
+            if roomid == -1:
+                dict_['state'] = usrinfo.state
+                dict[name] = dict_
+                continue
+
+            thisroom = self.rooms[roomid]
+            plinfo = thisroom.players_info[name]
+            dict_ = {'room':roomid,'state':usrinfo.state,'place':thisroom.players.index(name),
+                    'cards_remain':plinfo.cards_list,'this_trick':thisroom.cards_on_table[1:],
+                    'trick_start':thisroom.trick_start,'players':self.get_players_info(roomid),
+                    'history':thisroom.history,'initial_cards':plinfo.initial_cards,
+                    'scores':[thisroom.players_info[pl].scores for pl in thisroom.players],
+                    'scores_num':[thisroom.players_info[pl].scores_num for pl in thisroom.players]}
+            dict[name] = dict_
+        self.sendmsg(cmd,dict,name=name)
+
+
+
     def requestinfo(self,sid,data):
         data = self.strip_data(sid, data)
         name = data['user']
@@ -1105,6 +1162,7 @@ class FSMServer:
                         if user:
                             #log("sending %s: %s to (name)%s,(sid)%s,(roomid)%s" % (cmd, dict, name, sid, roomid))
                             self.sendmsg(cmd, dict, name=user)
+
                     for god in self.rooms[rooid].god_list:
                         if god:
                             self.sendmsg(cmd, dict, name=god)
@@ -1146,6 +1204,6 @@ class FSMServer:
 
 
 if __name__ == "__main__":
-    server = FSMServer(5000)
+    server = FSMServer(9000)
     server.run_forever()
 
