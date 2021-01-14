@@ -19,6 +19,15 @@ window.onload = function(){
         }
         return objClone;
     }
+  deleteelement = function(arr, ele){
+    var i=0;
+    for(;i<arr.length;i++){
+      if(arr[i]==ele){
+        break;
+      }
+    }
+      arr.splice(i,1);
+    }
 //Some predefined functions for simplicity
   function loadThenDisplayImage (src, sx,sy,dw,dh) {
     var image = new Image(dw,dh);
@@ -58,6 +67,7 @@ window.onload = function(){
    var mypassword;
    var gameMessage;
    var mylocation=0;
+   var zeroplayer = 'empty';
    var leftplayer='empty';
    var rightplayer='empty';
    var oppositeplayer='empty';
@@ -65,6 +75,7 @@ window.onload = function(){
    var previousclick='NA';
    var toplay='NA';
 
+   var players_seen=[];
    var turnsleft=8;
    var handcardsleft=['H3','C4','C5','CJ','DQ','CA','CQ','CK'];
    var mypointcards=['H2','HK'];
@@ -85,15 +96,19 @@ window.onload = function(){
    var itemssurtable=[];
    var players_in_room=[['', false, true],['', false, true],['', false, true],['', false, true]];
    var timemessage = "";
-   var timeremain = 30;
+   var timeremain = 10;
    var all_images = ['Miss.random', 'Miss.if', 'R18', 'Mr.Greed']
    const tout_direction = ['south', 'east', 'north', 'west']
 
    var image_clicked = [0,0,0,0];
    var add_robot_place = 0;
    var unseated = true;
+   var updatedplayer = 'you-know-who';
+   var gameover = false;
 
   drawcards = function(){
+     //console.log('lastroundme');
+     //console.log(lastroundme);
      //player's cards:
      var hinterval=CW/12;
      var hstartx=CW*7/16-hinterval*turnsleft*0.5;
@@ -315,6 +330,7 @@ window.onload = function(){
               itemssurtable.push('cd'+leftpoint[i]);
               startlevel++;
             }
+          document.getElementById('hleftname').style.top='400px';
          }
          if (lastroundleft!='NA'){
            loadThenDisplayImage2('cd'+lastroundleft,CW*0.4, (CH/2-0.5*cardheight),cardwidth,cardheight,sealevel+1);
@@ -364,6 +380,8 @@ window.onload = function(){
               startlevel++;
               itemssurtable.push('cd'+rightpoint[i]);
             }
+            document.getElementById('hrightname').style.top='400px';
+
          }
          if (lastroundright!='NA'){
            loadThenDisplayImage2('cd'+lastroundright,CW*0.6-cardwidth, (CH/2-0.5*cardheight),cardwidth,cardheight,sealevel+1);
@@ -514,6 +532,7 @@ window.onload = function(){
   updategametabletodecidepage = function(){
   //clearitems();
   //drawcards();
+  console.log('game to decide page loaded');
   document.getElementById('canclebutton').style.display='';
   document.getElementById('confirmbutton').style.display='';
   document.getElementById('exitbutton').style.display='none';
@@ -593,6 +612,7 @@ window.onload = function(){
     var data = JSON.parse(rdata);
     gamestate = 'inroom';
     readystate='unready';
+    zeroplayer = myname;
     document.getElementById("setready").style.display = 'none';
     unseated = true;
     roomstate = data.game_state;
@@ -617,6 +637,50 @@ window.onload = function(){
 
     grandupdate();
   })
+  socket.on('godin_reply', function(rdata){
+    var data = JSON.parse(rdata);
+    if (data.game_state == 'started'){
+      gameover = false;
+      gamestate = 'ingame-thinking';
+      readystate='unready';
+      players_seen = [];
+      for(var i=0;i<data.players.length;i++){
+        players_seen.push(data.players[i][0]);
+      }
+
+      socket.emit('request_group_info',JSON.stringify({user: myname, user_list:players_seen}));
+      console.log('request group info sent');
+    }
+    else{
+      gamestate = 'inroom';
+      readystate='unready';
+      document.getElementById("setready").style.display = 'none';
+      unseated = true;
+      roomstate = data.game_state;
+      nop = 0
+      players_in_room = data.players;
+      numberofplayer = players_in_room.length;
+      //update_player_images_and_names();
+      for (var i=0;i<4;i++){
+        if (data.players[i][1]){
+          nop++;
+        }
+      }
+      if (roomstate=='started'){
+        gameMessage='<h2>You entered room ' + chambrename + '. There are '+nop+' player(s).  The game has alresdy started</h2>';
+      }
+      else{
+        gameMessage='<h2>You entered room ' + chambrename + '. There are '+nop+' player(s).  The room is'+roomstate+'</h2>';
+
+      }
+      document.getElementById("smalltitle").innerHTML=''+chambrename+'@'+myname;
+      document.getElementById("nomdechambre").innerHTML='Room '+chambrename;
+
+      grandupdate();
+
+    }
+
+  })
 
   socket.on('player_info',function (rdata){
     var data=JSON.parse(rdata);
@@ -630,6 +694,7 @@ window.onload = function(){
     var data = JSON.parse(rdata);
     gamestate = 'inroom';
     readystate='unready';
+    zeroplayer = myname;
     document.getElementById('setready').style.display = '';
     document.getElementById('setready').innerHTML = 'Ready';
     unseated = false;
@@ -751,6 +816,15 @@ window.onload = function(){
     grandupdate();
 
   })
+  socket.on('godout_reply',function (rdata){
+    var data=JSON.parse(rdata);
+    gamestate='inhall';
+    readystate='unready';
+    unseated = true;
+    console.log('received god out reply');
+    grandupdate();
+
+  })
 
   socket.on('choose_place_reply',function (rdata){
     var data=JSON.parse(rdata);
@@ -808,7 +882,7 @@ window.onload = function(){
   socket.on('new_player',function (rdata){
 	  var data=JSON.parse(rdata);
 	  numberofplayer=data.players.length;
-
+    zeroplayer = myname;
     for (var i=0;i<data.players.length;i++){
       if (i==0){
         document.getElementById("southplayername").innerHTML='South: '+data.players[i];
@@ -866,6 +940,7 @@ window.onload = function(){
   })
 
   socket.on('shuffle',function (rdata){
+    if (!isgod){
 	  var data=JSON.parse(rdata);
       handcardsleft=data.cards;
       turnsleft=handcardsleft.length;
@@ -882,25 +957,117 @@ window.onload = function(){
       document.getElementById('hoppositename').innerHTML='<h3>'+oppositeplayer+'</h3>'
       gameMessage='<h2>Game started </h2>';
       gamestate='ingame-wait';
-      grandupdate();
+      gameover = false;
+      grandupdate();}
+    else{
+      gameover = false;
+      players_seen = [zeroplayer, rightplayer, oppositeplayer, leftplayer];
+      socket.emit('request_group_info',JSON.stringify({user: myname, user_list:players_seen}));
+    }
   })
+
+  socket.on('request_group_info_reply',function (rdata){
+	  var data=JSON.parse(rdata);
+    lastroundme='NA';
+    lastroundleft='NA';
+    lastroundopposite='NA';
+    lastroundright='NA';
+    console.log('received reply of request group info');
+
+    for(var j=0;j<players_seen.length;j++){
+
+      var playername = players_seen[j];
+      //console.log(players_seen);
+      //console.log(playername);
+      //console.log(rdata);
+      //console.log(rdata[playername]);
+      //console.log(data[playername]);
+      //var dictj = JSON.parse(data[playername]);
+      dictj = data[playername];
+      //console.log(dictj);
+      if (dictj.place == 0){
+        document.getElementById('hmyname').innerHTML='<h3>'+playername+'</h3>';
+        zeroplayer = playername;
+        handcardsleft = dictj.cards_remain;
+        mypointcards = dictj.scores[0];
+        posshift = (0-dictj.trick_start+4)%4;
+        if ((dictj.this_trick.length+dictj.trick_start+3) % 4 == 0){
+          updatedplayer = zeroplayer;
+        }
+        if(posshift<dictj.this_trick.length){
+          lastroundme = dictj.this_trick[posshift];
+        }
+      }
+      else if (dictj.place == 1) {
+        document.getElementById('hrightname').innerHTML='<h3>'+playername+'</h3>';
+        rightplayer = playername;
+        righthand = dictj.cards_remain;
+        rightpoint = dictj.scores[1];
+        posshift = (1-dictj.trick_start+4)%4;
+        if ((dictj.this_trick.length+dictj.trick_start+3) % 4 == 1){
+          updatedplayer = rightplayer;
+        }
+        if(posshift<dictj.this_trick.length){
+          lastroundright = dictj.this_trick[posshift];
+        }
+      }
+      else if (dictj.place == 2) {
+        document.getElementById('hoppositename').innerHTML='<h3>'+playername+'</h3>';
+        oppositeplayer = playername;
+        oppositehand = dictj.cards_remain;
+        oppositepoint = dictj.scores[2];
+        posshift = (2-dictj.trick_start+4)%4;
+        if ((dictj.this_trick.length+dictj.trick_start+3) % 4 == 2){
+          updatedplayer = oppositeplayer;
+        }
+        if(posshift<dictj.this_trick.length){
+          lastroundopposite = dictj.this_trick[posshift];
+        }
+      }
+      else if (dictj.place == 3) {
+        document.getElementById('hleftname').innerHTML='<h3>'+playername+'</h3>';
+        leftplayer = playername;
+        lefthand = dictj.cards_remain;
+        leftpoint = dictj.scores[3];
+        posshift = (3-dictj.trick_start+4)%4;
+        if ((dictj.this_trick.length+dictj.trick_start+3) % 4 == 3){
+          updatedplayer = leftplayer;
+        }
+        if(posshift<dictj.this_trick.length){
+          lastroundleft = dictj.this_trick[posshift];
+        }
+      }
+    }
+
+    if(gameover){
+      gamestate='ingame-gameover';
+    }
+    else{
+      gameMessage='<h2>Card played from '+updatedplayer+'</h2>';
+      gamestate='ingame-wait';
+    }
+
+    grandupdate();
+
+    })
 
   socket.on('update',function (rdata){
 	  var data=JSON.parse(rdata);
     if(data.this_trick.length==0){
       //gameMessage='<h2>Card to play from '+updatedplayer+'</h2>';
+      console.log('nothing to be done');
     }
     else{
-
-
 	    lastroundme='NA';
       lastroundleft='NA';
       lastroundopposite='NA';
       lastroundright='NA';
-	    var lastcards=data.this_trick;
+	    var lastcards=deepClone(data.this_trick);
 	    for(;lastcards.length<numberofplayer;){
 		    lastcards.push('NA');
 	    }
+      console.log('last cards');
+      console.log(lastcards);
 	    //var relpos=(data.trick_start-mylocation+numberofplayer)%numberofplayer;
 	    if(numberofplayer==3){
 		    console.log('mylocation '+mylocation+' lastcards '+ lastcards);
@@ -919,7 +1086,7 @@ window.onload = function(){
 		    lastcards.pop();
 	    }
 	    console.log(numberofplayer+' table updated ');
-      var updatedplayer=myname;
+      updatedplayer=zeroplayer;
       var relativepos=(data.trick_start+data.this_trick.length-mylocation+numberofplayer)%numberofplayer;
       if (relativepos==1){
         updatedplayer=rightplayer
@@ -938,14 +1105,54 @@ window.onload = function(){
 
       gameMessage='<h2>Card played from '+updatedplayer+'</h2>';
       gamestate='ingame-wait';
-      grandupdate();
+      //grandupdate();
+      if(isgod){
+        console.log(data.this_trick.length);
+        if(data.this_trick.length==4){
+          lastroundme = data.this_trick[0];
+          lastroundright = data.this_trick[1];
+          lastroundopposite = data.this_trick[2];
+          lastroundleft = data.this_trick[3];
+          var uppr = (data.trick_start+3)%4;
+          if(uppr==0){
+            updatedplayer = zeroplayer;
+            deleteelement(handcardsleft, data.this_trick[3]);
+          }
+          else if (uppr==1) {
+            updatedplayer = rightplayer;
+            deleteelement(righthand, data.this_trick[3]);
+          }
+          else if (uppr==2) {
+            updatedplayer = oppositeplayer;
+            deleteelement(oppositehand, data.this_trick[3]);
+          }
+          else if (uppr==3) {
+            updatedplayer = leftplayer;
+            deleteelement(lefthand, data.this_trick[3]);
+          }
+          gameMessage='<h2>Card played from '+updatedplayer+'</h2>';
+          gamestate='ingame-wait';
+          grandupdate();
+        }
+        else{
+          players_seen = [zeroplayer, rightplayer, oppositeplayer, leftplayer];
+          console.log('request upon update');
+          socket.emit('request_group_info',JSON.stringify({user: myname, user_list:players_seen}));
+        }
+
+      }
+      else{
+        grandupdate();
+      }
     }
+
     })
 
   socket.on('my_choice_reply',function (rdata){
 	    var data=JSON.parse(rdata);
 	    handcardsleft=data.your_remain;
-      lastroundme=toplay;
+      //toplay = data.yourcard;
+      //lastroundme=toplay;
       if(colorofthisturn=='A'){
         lastroundopposite='NA';
         lastroundleft='NA';
@@ -981,7 +1188,7 @@ window.onload = function(){
 	  var relapos=(data.winner-mylocation+nop)%nop;
 	  var gainer;
 	  if (relapos==0){
-		  gainer=myname;
+		  gainer=zeroplayer;
 	  }
 	  else if(relapos==1){
 		  gainer=rightplayer;
@@ -995,7 +1202,7 @@ window.onload = function(){
 		  }
 	  }
 	  else if(relapos==3){
-		  gainer==leftplayer;
+		  gainer=leftplayer;
 	  }
       gameMessage='<h2>Trick ends, '+gainer+' get all cards </h2>';
 	    //lastroundme='NA';
@@ -1019,6 +1226,7 @@ window.onload = function(){
 
   socket.on('game_end',function (rdata){
     console.log('game-over');
+    gameover = true;
 	  var data=JSON.parse(rdata);
 	  var srcmsg='';
 	  for(var i=0;i<data.scores_num.length;i++){
@@ -1057,7 +1265,12 @@ window.onload = function(){
  }
 
   createnewroom = function(howmanyplayers){
+  if(!isgod){
    socket.emit('create_room',JSON.stringify({user: myname, room:howmanyplayers}));
+  }
+  else{
+    alert('With greater power, comes greater responsibility.')
+  }
    /*var result = confirm('You created a new room!');
     if(result){
         alert('You confirmed!');
@@ -1066,8 +1279,14 @@ window.onload = function(){
  }
 
   enterroom = function(whichroom){
-   socket.emit('enter_room',JSON.stringify({user: myname, room:whichroom}));
-   chambrename=whichroom;
+  if(!isgod){
+    socket.emit('enter_room',JSON.stringify({user: myname, room:whichroom}));
+    chambrename=whichroom;
+  }
+  else{
+    socket.emit('god_in',JSON.stringify({user: myname, room:whichroom}));
+    chambrename=whichroom;
+  }
  }
   changereadystate = function(){
   if (readystate == 'unready'&&gamestate=='inroom'){
@@ -1141,11 +1360,18 @@ window.onload = function(){
       else if (gamestate=='ingame-gameover') {
           //gamestate='inroom';
           //readystate = 'unready';
-          document.getElementById("setready").innerHTML="Ready"
-          document.getElementById('roommessage').innerHTML='You choose to stay in the room. A new game will start once all players are in position';
-          //socket.emit('rester_dans_la_chambre',JSON.stringify({user:myname, room:chambrename}));
-          socket.emit('new_game',JSON.stringify({user: myname}));
-          grandupdate();
+          if(isgod){
+            gamestate = 'inroom';
+            grandupdate();
+          }
+          else {
+            document.getElementById("setready").innerHTML="Ready"
+            document.getElementById('roommessage').innerHTML='You choose to stay in the room. A new game will start once all players are in position';
+            //socket.emit('rester_dans_la_chambre',JSON.stringify({user:myname, room:chambrename}));
+            socket.emit('new_game',JSON.stringify({user: myname}));
+            grandupdate();
+          }
+
       }
    }
 
@@ -1160,7 +1386,12 @@ window.onload = function(){
   }
   else if (gamestate=='ingame-gameover') {
     //gamestate='inhall';
-    socket.emit('leave_room',JSON.stringify({user:myname }));
+    if(isgod){
+      socket.emit('god_out',JSON.stringify({user:myname, room:chambrename }));
+    }
+    else{
+      socket.emit('leave_room',JSON.stringify({user:myname }));
+    }
     //grandupdate();
    }
   }
@@ -1168,9 +1399,15 @@ window.onload = function(){
     document.getElementById("robotinfo").style.display='none';
   }
   exited = function(){
-    gamestate='inhall';
-    socket.emit('leave_room',JSON.stringify({user:myname }));
-    grandupdate();
+    //gamestate='inhall';
+    if(isgod){
+      socket.emit('god_out',JSON.stringify({name:myname, room:chambrename }));
+    }
+    else{
+      socket.emit('leave_room',JSON.stringify({user:myname }));
+    }
+
+    //grandupdate();
   }
   quiterchambre = function(){
     //gamestate='inhall';
@@ -1181,41 +1418,50 @@ window.onload = function(){
     //grandupdate();
   }
   clickimage = function(whichimage){
-    if(gamestate=='inroom'){
-      console.log(players_in_room[whichimage][0]);
-      if(unseated){
-        console.log('choose place:'+whichimage)
-        socket.emit('choose_place',JSON.stringify({user:myname, room:chambrename, place:whichimage }))
-        mylocation = whichimage;
-        document.getElementById('roommessage').innerHTML = 'You choose to sit at '+tout_direction[whichimage]+'. Waiting for server response...';
-      }
-      else if((!unseated)&&(readystate=='unready')){
-        console.log('ask place change:'+whichimage)
-        image_clicked[whichimage]=(image_clicked[whichimage]+1)%2;
-        socket.emit('ask_change_place',JSON.stringify({user:myname, target_place:whichimage }));
-        document.getElementById('roommessage').innerHTML = 'You intend to switch your position to '+tout_direction[whichimage]+'. Waiting for server response...';
-        //check_place_change();
-        //update_player_images_and_names();
-      }
-      else{
-        document.getElementById('roommessage').innerHTML = 'You cannot change position when you are ready. Unready first.';
+    if (isgod){
+
+    }
+    else{
+      if(gamestate=='inroom'){
+        console.log(players_in_room[whichimage][0]);
+        if(unseated){
+          console.log('choose place:'+whichimage)
+          socket.emit('choose_place',JSON.stringify({user:myname, room:chambrename, place:whichimage }))
+          mylocation = whichimage;
+          document.getElementById('roommessage').innerHTML = 'You choose to sit at '+tout_direction[whichimage]+'. Waiting for server response...';
+        }
+        else if((!unseated)&&(readystate=='unready')){
+          console.log('ask place change:'+whichimage)
+          image_clicked[whichimage]=(image_clicked[whichimage]+1)%2;
+          socket.emit('ask_change_place',JSON.stringify({user:myname, target_place:whichimage }));
+          document.getElementById('roommessage').innerHTML = 'You intend to switch your position to '+tout_direction[whichimage]+'. Waiting for server response...';
+          //check_place_change();
+          //update_player_images_and_names();
+        }
+        else{
+          document.getElementById('roommessage').innerHTML = 'You cannot change position when you are ready. Unready first.';
+        }
       }
     }
+
   }
 
   addrobot = function(whichplace){
-    if((players_in_room[whichplace][0]!='')&&(players_in_room[whichplace][2]==false)){
-      document.getElementById('roommessage').innerHTML = 'You cannot add a robot here!';
+    if(!isgod){
+      if((players_in_room[whichplace][0]!='')&&(players_in_room[whichplace][2]==false)){
+        document.getElementById('roommessage').innerHTML = 'You cannot add a robot here!';
+      }
+      else if((players_in_room[whichplace][0]=='')&&(players_in_room[whichplace][2]==false)){
+        add_robot_place = whichplace;
+        console.log('request robot at',whichplace);
+        socket.emit('request_robot_list',JSON.stringify({user:myname, room:chambrename }));
+      }
+      else if((players_in_room[whichplace][0]!='')&&(players_in_room[whichplace][2]==true)){
+        console.log('remove robot at',whichplace);
+        socket.emit('cancel_robot',JSON.stringify({user:myname, place:whichplace }));
+      }
     }
-    else if((players_in_room[whichplace][0]=='')&&(players_in_room[whichplace][2]==false)){
-      add_robot_place = whichplace;
-      console.log('request robot at',whichplace);
-      socket.emit('request_robot_list',JSON.stringify({user:myname, room:chambrename }));
-    }
-    else if((players_in_room[whichplace][0]!='')&&(players_in_room[whichplace][2]==true)){
-      console.log('remove robot at',whichplace);
-      socket.emit('cancel_robot',JSON.stringify({user:myname, place:whichplace }));
-    }
+
 
     //alert('bonjour '+whichplace);
   }
@@ -1231,7 +1477,7 @@ window.onload = function(){
       appearance = 0;
     }
     if (isgod){
-      gameMessage='<h2>The player has '+appearance+' seconds to make a decision.</h2>';
+      gameMessage='<h2>'+appearance+' seconds left.</h2>';
 
     }
     else{
@@ -1244,7 +1490,7 @@ window.onload = function(){
       if(! isgod){
         gamestate='ingame-wait';
         gameMessage='<h2>Timeout, Miss. random will play on your behalf.</h2>'
-        socket.emit('my_choice',JSON.stringify({user:myname, room:chambrename, card:"", place:mylocation}));
+        socket.emit('my_choice',JSON.stringify({user:myname, room:chambrename, card:"timeout", place:mylocation}));
         grandupdate();
       }
     }
@@ -1262,13 +1508,21 @@ window.onload = function(){
       }
     }
     else if (numberofplayer==4) {
-      for(var i=0;i<4;i++){
-        if(players_in_room[i][0]==myname){
-          mylocation=i;
-          leftplayer=players_in_room[(i+3)%4][0];
-          rightplayer=players_in_room[(i+1)%4][0];
-          oppositeplayer=players_in_room[(i+2)%4][0];
-          break;
+      if(isgod){
+        zeroplayer = players_in_room[0][0];
+        rightplayer = players_in_room[1][0];
+        oppositeplayer = players_in_room[2][0];
+        leftplayer = players_in_room[3][0];
+      }
+      else{
+        for(var i=0;i<4;i++){
+          if(players_in_room[i][0]==myname){
+            mylocation=i;
+            leftplayer=players_in_room[(i+3)%4][0];
+            rightplayer=players_in_room[(i+1)%4][0];
+            oppositeplayer=players_in_room[(i+2)%4][0];
+            break;
+          }
         }
       }
     }

@@ -188,12 +188,15 @@ class RoomHoster:
 
         if card == 'timeout':
             cdlist = self.players_info[name].cards_list
-            lglist = [i for i in cdlist if i[0] == self.cards_on_table[1][0]]
-            if usr_loc == self.trick_start or not len(lglist):
-                # the first player
+            if usr_loc == self.trick_start:
                 card = random.choice(cdlist)
             else:
-                card = random.choice(lglist)
+                lglist = [i for i in cdlist if i[0] == self.cards_on_table[1][0]]
+                if not len(lglist):
+                    # the first player
+                    card = random.choice(cdlist)
+                else:
+                    card = random.choice(lglist)
 
         if card not in self.players_info[name].cards_list:
             return 'error', {'detail': 'not your card'}
@@ -431,6 +434,7 @@ class FSMServer:
     def login(self,sid,data):
         data = self.strip_data(sid, data)
         name = data['user']
+        password = data['user_pwd']
         '''
         TODO: add pwd check
         '''
@@ -444,9 +448,11 @@ class FSMServer:
         if 'is_robot' in data:
             self.user_state_dict[name].is_robot = True
             self.user_state_dict[name].robot_type = data['robot_type']
-        if 'is_god' in data:
+        if name == 'Dieu' and password == 'liebeyy':
             self.user_state_dict[name].is_god = True
-        self.sendmsg('login_reply',{},name=name)
+            self.sendmsg('login_reply',{'is_god':1},name=name)
+        else:
+            self.sendmsg('login_reply', {'is_god': 0}, name=name)
 
     def requestroomlist(self,sid,data):
         data = self.strip_data(sid, data)
@@ -485,6 +491,7 @@ class FSMServer:
         try:
             assert 'room' in data
             roomid = data['room']
+            thisroom = self.rooms[roomid]
             assert name in self.user_state_dict
         except:
             self.sendmsg('error', {'detail': 'error in godin'}, sid=sid)
@@ -502,6 +509,8 @@ class FSMServer:
         try:
             assert 'room' in data
             roomid = data['room']
+            thisroom = self.rooms[roomid]
+
             assert name in self.user_state_dict
         except:
             self.sendmsg('error', {'detail': 'error in godin'}, sid=sid)
@@ -723,6 +732,7 @@ class FSMServer:
         if cmd == 'my_choice_reply' and dict['legal']:
             self.user_state_dict[name].state = 'trick_after_play'
             cmd,dict = thisroom.update()
+            #time.sleep(1)
             self.sendmsg(cmd,dict,roomid=roomid)
             tar,cmd,dict = thisroom.step()
             if tar == 'all':
@@ -731,7 +741,6 @@ class FSMServer:
                     for pl in thisroom.players:
                         self.user_state_dict[pl].state = 'trick_before_play'
                     cmd, dict = thisroom.update()
-                    time.sleep(1)
                     self.sendmsg(cmd, dict, roomid=roomid)
                     tar,cmd,dict = thisroom.step()
                     if tar == 'all':
@@ -1084,7 +1093,7 @@ class FSMServer:
                     'scores':[thisroom.players_info[pl].scores for pl in thisroom.players],
                     'scores_num':[thisroom.players_info[pl].scores_num for pl in thisroom.players]}
             dict[name] = dict_
-        self.sendmsg(cmd,dict,name=name)
+        self.sendmsg(cmd,dict,name=data["user"])
 
 
 
@@ -1137,6 +1146,9 @@ class FSMServer:
 
         for player in thisroom.players:
             self.sendmsg('shuffle',{'cards':thisroom.players_info[player].cards_list},name=player)
+        for god in self.rooms[roomid].god_list:
+            if god:
+                self.sendmsg('shuffle', {}, name=god)
 
     def sendmsg(self,cmd, dict, name=None, sid=None, roomid=None,need_reply = False):
         """name 是发给用户, sid 是发给sid, room 是房间广播"""
@@ -1163,7 +1175,7 @@ class FSMServer:
                             #log("sending %s: %s to (name)%s,(sid)%s,(roomid)%s" % (cmd, dict, name, sid, roomid))
                             self.sendmsg(cmd, dict, name=user)
 
-                    for god in self.rooms[rooid].god_list:
+                    for god in self.rooms[roomid].god_list:
                         if god:
                             self.sendmsg(cmd, dict, name=god)
                 break

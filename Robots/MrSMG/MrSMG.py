@@ -1,3 +1,5 @@
+import sys
+#sys.path.insert(0, 'Robots/')
 from ..Robot import Robot
 import Utils
 from .model import PNet

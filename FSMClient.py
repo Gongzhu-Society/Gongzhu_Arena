@@ -190,6 +190,7 @@ class RobotFamily:
         if player.state == 'play_a_card':
             card = player.pick_a_card()
             print('sending choice')
+            time.sleep(2)
             self.sendmsg('my_choice', {'user': player.name, 'card': card})
             return
 
