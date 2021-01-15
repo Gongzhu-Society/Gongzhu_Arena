@@ -1107,12 +1107,13 @@ window.onload = function(){
       gamestate='ingame-wait';
       //grandupdate();
       if(isgod){
+        //data.trick_start
         console.log(data.this_trick.length);
         if(data.this_trick.length==4){
-          lastroundme = data.this_trick[0];
-          lastroundright = data.this_trick[1];
-          lastroundopposite = data.this_trick[2];
-          lastroundleft = data.this_trick[3];
+          lastroundme = data.this_trick[(4-data.trick_start)%4];
+          lastroundright = data.this_trick[(5-data.trick_start)%4];
+          lastroundopposite = data.this_trick[(6-data.trick_start)%4];
+          lastroundleft = data.this_trick[(7-data.trick_start)%4];
           var uppr = (data.trick_start+3)%4;
           if(uppr==0){
             updatedplayer = zeroplayer;
@@ -1176,7 +1177,7 @@ window.onload = function(){
       else{
         gameMessage='<h2>Your turn!</h2>';
       }
-      timeremain = 32;
+      timeremain = 302;
       timecounter = setInterval(function(){count_down()}, 1000)
       gamestate='ingame-thinking';
       grandupdate();
