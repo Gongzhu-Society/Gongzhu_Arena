@@ -968,7 +968,9 @@ class FSMServer:
         roomid = self.user_state_dict[name].room
         thisroom = self.rooms[roomid]
 
-        self.sendmsg('request_robot_list_reply',{'robot_list':list(self.robot_dict.keys())}, name=name)
+        rblist = list(self.robot_dict.keys())
+        rblist.sort()
+        self.sendmsg('request_robot_list_reply',{'robot_list':rblist}, name=name)
 
     def addrobot(self,sid,data):
         data = self.strip_data(sid, data)
