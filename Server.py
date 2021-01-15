@@ -432,17 +432,33 @@ class FSMServer:
         pass
 
     def login(self,sid,data):
-        data = self.strip_data(sid, data)
+        data = self.strip_data(sid, data, need_check = True)
         name = data['user']
         password = data['user_pwd']
         '''
         TODO: add pwd check
         '''
-        try:
-            assert self.user_state_dict[name].state == 'logout'
-        except:
-            self.sendmsg('error', {'detail': 'state error in login'}, name=name)
-            return
+
+        if name in self.user_state_dict and not self.user_state_dict[name].state == 'logout':
+            #print('already in')
+            roomid = self.user_state_dict[name].room
+            if not roomid == -1:
+                thisroom = self.rooms[roomid]
+                if thisroom.leave_room(name):
+                    self.user_state_dict[name].room = -1
+                self.send_player_info(roomid)
+                if thisroom.isempty():
+                    self.rooms.pop(roomid)
+
+            self.user_state_dict[name].state = 'logout'
+            self.sendmsg('error', {'detail': 'log in another equipment'},name=name)
+
+
+        if name in self.user_state_dict:
+            self.user_state_dict[data['user']].sid = sid
+        else:
+            self.user_state_dict[data['user']] = UserInfo()
+            self.user_state_dict[data['user']].sid = sid
 
         self.user_state_dict[name].state = 'login'
         if 'is_robot' in data:
@@ -1187,7 +1203,7 @@ class FSMServer:
         #time.sleep(0.1)
         return 0
 
-    def strip_data(self,sid,data):
+    def strip_data(self,sid,data,need_check = False):
         try:
             data = json.loads(data)
         except:
@@ -1201,11 +1217,13 @@ class FSMServer:
             log('data lack element: %s' % (data), l=2)
             self.sendmsg('error', {'detail': 'data lack element'}, sid=sid)
             return 2
-        if data['user'] in self.user_state_dict:
-            self.user_state_dict[data['user']].sid = sid
-        else:
-            self.user_state_dict[data['user']] = UserInfo()
-            self.user_state_dict[data['user']].sid = sid
+        if not need_check:
+            if data['user'] in self.user_state_dict:
+                self.user_state_dict[data['user']].sid = sid
+            else:
+                self.user_state_dict[data['user']] = UserInfo()
+                self.user_state_dict[data['user']].sid = sid
+
         return data
 
     def run_forever(self):
@@ -1216,6 +1234,6 @@ class FSMServer:
 
 
 if __name__ == "__main__":
-    server = FSMServer(9000)
+    server = FSMServer(5000)
     server.run_forever()
 
