@@ -1,3 +1,4 @@
+from Utils import log
 import time,random
 
 class Robot:
@@ -69,39 +70,45 @@ class Robot:
         pass
 
     def gameend(self):
-        if self.place == 0:
+        # self.players_information looks like [['Sun', True, False], ['Miss.if0', True, True], ['Miss.if1', True, True], ['Miss.if2', True, True]]
+        should_record = True
+        for i in range(self.place):
+            if self.players_information[i][2]:
+                log("I should record")
+                should_record = False
+                break
+        if should_record:
             print('result:{}'.format(self.scores_num,self.scores_num[self.place]))
-            nm = ''
+            """nm = ''
             for pl in self.players_information:
                 nm += pl[0]
                 nm += '_'
 
-            nm += '.txt'
+            nm += '.txt'"""
+            nm = [pl[0] for pl in self.players_information]
+            nm = "Records/" + "_".join(nm) + ".txt"
 
             with open(nm, 'a') as f:
                 s = ''
                 for turn in self.history:
                     s += str(turn[0])
-                    s += ','
+                    s += ', '
                     for t in range(4):
                         s += turn[t + 1]
-                        s += ','
+                        s += ', '
                     s += '\n'
                 s += '\n'
                 s += 'result:'
 
                 for n in self.scores_num:
                     s += str(n)
-                    s += ','
+                    s += ', '
                 s += '\n\n\n'
 
                 f.write(s)
+                log("recorded")
         #time.sleep(1)
         self.res.append(self.scores_num[self.place])
-
-
-
-
 
     @staticmethod
     def family_name():
