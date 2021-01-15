@@ -581,9 +581,13 @@ class RobotFamily:
         self.sendmsg('login', {"user": name, "user_pwd": -1})
 
 
-
-fm = RobotFamily('http://127.0.0.1:9000')
-fm.connect()
+if __name__=="__main__":
+    from ast import literal_eval
+    with open("config.py",'r') as f:
+        config=literal_eval(f.read()) #a dict like: {"port":9000}
+        log("read log from %s: %s"%(f.name,config))
+    fm = RobotFamily('http://127.0.0.1:%d'%(config["port"]))
+    fm.connect()
 
 #if __name__ == '__main__':
 #    fm.create_room(MrGreed)

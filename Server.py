@@ -1234,6 +1234,10 @@ class FSMServer:
 
 
 if __name__ == "__main__":
-    server = FSMServer(5000)
+    from ast import literal_eval
+    with open("config.py",'r') as f:
+        config=literal_eval(f.read()) #a dict like: {"port":9000}
+        log("read log from %s: %s"%(f.name,config))
+    server = FSMServer(config["port"])
     server.run_forever()
 
