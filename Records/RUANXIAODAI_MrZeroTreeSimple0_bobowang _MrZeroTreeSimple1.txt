@@ -1,0 +1,30 @@
+0, C6, CA, C7, CK
+1, D4, D5, D7, D9
+0, C5, C9, C8, C4
+1, S6, SJ, S7, SK
+0, S5, S2, S9, S3
+2, S8, S10, HK, SA
+1, H7, H6, H2, H4
+1, H8, HJ, H9, H10
+2, CQ, C2, C3, C10
+2, D8, DK, DA, CJ
+0, DQ, S4, DJ, D10
+0, D3, H5, HA, D2
+0, D6, H3, HQ, SQ
+result: -90, -60, -100, 0
+
+0, D10, D7, DQ, D9
+2, C7, C8, CQ, CJ
+0, D8, D4, D6, D3
+0, H9, H5, H7, H4
+0, H8, HJ, H3, HA
+3, C9, C3, C5, S8
+3, HQ, H6, H10, H2
+3, S3, SJ, S10, S6
+0, S2, SA, S5, CK
+1, D2, DK, CA, SK
+2, S4, C6, S9, SQ
+1, DJ, DA, C4, C10
+2, D5, C2, S7, HK
+result: -30, -100, 120, -130
+

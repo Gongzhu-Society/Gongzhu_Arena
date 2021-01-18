@@ -1,0 +1,15 @@
+0, HA, H10, H2, H4
+0, SA, SJ, SK, S7
+0, CK, DK, C7, CQ
+0, CJ, DJ, C4, C5
+0, C10, S3, H7, CA
+3, D6, D9, D2, D10
+2, H6, HK, C9, HJ
+3, S5, S9, S10, H9
+1, D3, D7, D4, S8
+2, HQ, H8, C8, DQ
+2, H3, DA, C6, D8
+2, D5, S4, C3, S6
+2, H5, C2, S2, SQ
+result: 40, -10, -150, -160
+
