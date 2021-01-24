@@ -1,4 +1,4 @@
-
+# coding=utf-8
 
 import time, sys, traceback, math, copy
 #import FSMClient
@@ -311,12 +311,10 @@ class FSMServer:
         self.rooms = {0:RoomHoster()}
 
         self.port = port
-        self.family_sid = 0
 
         #rooms[id] = RoomHoster()
         self.robot_dict = {}
         #self.robot_family = FSMClient.RobotFamily('http://127.0.0.1:5000')
-        self.load_robot_dict()
 
         pt = self
 
@@ -328,7 +326,13 @@ class FSMServer:
 
         @self.sio.on('update_sid')
         def update_sid(sid,data):
-            self.family_sid = sid
+            data = json.loads(data)
+            for rb in data['robot_list']:
+                self.robot_dict[rb] = sid
+
+        @self.sio.on('add_robot_dict')
+        def add_robot_dict(sid,data):
+            pt.addrobotdict(sid,data)
 
         @self.sio.on('request_room_list')
         def request_room_list(sid,data):
@@ -421,11 +425,6 @@ class FSMServer:
         def disconnect(sid):
             log("sid %s disconnect" % (sid))
 
-
-
-    def load_robot_dict(self):
-        for i,rb in enumerate(robot_list):
-            self.robot_dict[rb.family_name()] = rb
 
 
     def load_pwd(self):
@@ -808,9 +807,6 @@ class FSMServer:
             if thisroom.isempty():
                 self.rooms.pop(roomid)
 
-    def load_robot_list(self):
-        self.robot_dict['MrRandom'] = Robot()
-
     def logout(self,sid,data):
         data = self.strip_data(sid, data)
         name = data['user']
@@ -999,7 +995,7 @@ class FSMServer:
         if thisroom.players[place] or rb_type not in self.robot_dict:
             self.sendmsg('add_robot_reply', {'success': False}, name=name)
 
-        self.sendmsg('add_robot',{'user':'','robot':rb_type,'room':roomid,'place':place,'master':name},sid=self.family_sid)
+        self.sendmsg('add_robot',{'user':'','robot':rb_type,'room':roomid,'place':place,'master':name},sid=self.robot_dict[rb_type])
         #rbn = self.robot_family.add_member(roomid,place,self.robot_dict[rb_type])
         self.sendmsg('add_robot_reply', {'success': True}, name=name)
 
@@ -1068,7 +1064,8 @@ class FSMServer:
             return
 
         else:
-            self.sendmsg('cancel_player',{'user':rbn},sid = self.family_sid)
+            rb_type = self.user_state_dict[rbn].robot_type
+            self.sendmsg('cancel_player',{'user':rbn},sid = self.robot_dict[robot_type])
             #self.robot_family.cancel_player(rbn)
             self.sendmsg('cancel_robot_reply',{'success':True},name=name)
             self.send_player_info(roomid)

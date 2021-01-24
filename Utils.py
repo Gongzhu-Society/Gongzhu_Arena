@@ -14,7 +14,7 @@ def log(msg,l=1,end="\n",logfile=None,fileonly=False):
     else:
         tempstr="%s [%s,%s:%d] %s:\n%s%s"%(now_str,lstr,st.name,st.lineno,str(msg),traceback.format_exc(limit=5),end)
     if not fileonly:
-        print(tempstr,end="")
+        print(tempstr,end='')
     if l>=2 or fileonly:
         if logfile==None:
             logfile=LOGFILE

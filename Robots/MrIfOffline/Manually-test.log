@@ -1,0 +1,38 @@
+21/01/14 18:08:08 592 [INFO,benchmark:18] complete info mode: False, against greed: True
+21/01/14 18:08:09 208 [INFO,benchmark:34] mcts_b/k: 20/2, sample_b/k: 10/1
+21/01/14 18:08:09 208 [INFO,benchmark:46] MrZeroTreeSimple v.s. MrGreed for 256x2
+21/01/14 18:08:09 209 [INFO,shuffle:43] shuffle: [['S7', 'S9', 'SK', 'H5', 'HJ', 'HA', 'DQ', 'DK', 'C2', 'C3', 'C4', 'C8', 'CJ'], ['S4', 'S6', 'S8', 'SJ', 'H3', 'H9', 'H10', 'HK', 'D3', 'D7', 'C6', 'C7', 'CK'], ['S3', 'S5', 'S10', 'SQ', 'H4', 'H8', 'D4', 'D10', 'DJ', 'DA', 'C9', 'C10', 'CA'], ['S2', 'SA', 'H2', 'H6', 'H7', 'HQ', 'D2', 'D5', 'D6', 'D8', 'D9', 'C5', 'CQ']]
+21/01/14 18:08:38 033 [INFO,step:72] zerotree0 played C8, [0, 'C8']
+21/01/14 18:08:38 037 [INFO,step:72] greed1 played CK, [0, 'C8', 'CK']
+21/01/14 18:08:54 016 [INFO,step:72] zerotree2 played C10, [0, 'C8', 'CK', 'C10']
+21/01/14 18:08:54 016 [INFO,step:72] greed3 played CQ, [0, 'C8', 'CK', 'C10', 'CQ']
+21/01/14 18:08:54 016 [INFO,step:98] trick end. winner is 1, [[], ['C10'], [], []]
+21/01/14 18:08:54 056 [INFO,step:72] greed1 played D7, [1, 'D7']
+21/01/14 18:09:10 454 [INFO,step:72] zerotree2 played D10, [1, 'D7', 'D10']
+21/01/14 18:09:10 456 [INFO,step:72] greed3 played D9, [1, 'D7', 'D10', 'D9']
+21/01/14 18:09:24 201 [INFO,step:72] zerotree0 played DQ, [1, 'D7', 'D10', 'D9', 'DQ']
+21/01/14 18:09:24 201 [INFO,step:98] trick end. winner is 0, [[], ['C10'], [], []]
+21/01/14 18:09:47 125 [INFO,step:72] zerotree0 played DK, [0, 'DK']
+21/01/14 18:09:47 126 [INFO,step:72] greed1 played D3, [0, 'DK', 'D3']
+21/01/14 18:10:01 713 [INFO,step:72] zerotree2 played DJ, [0, 'DK', 'D3', 'DJ']
+21/01/14 18:10:01 713 [INFO,step:72] greed3 played D8, [0, 'DK', 'D3', 'DJ', 'D8']
+21/01/14 18:10:01 714 [INFO,step:98] trick end. winner is 0, [['DJ'], ['C10'], [], []]
+21/01/14 18:10:22 618 [INFO,step:72] zerotree0 played CJ, [0, 'CJ']
+21/01/14 18:10:22 621 [INFO,step:72] greed1 played C7, [0, 'CJ', 'C7']
+21/01/14 18:10:35 436 [INFO,step:72] zerotree2 played C9, [0, 'CJ', 'C7', 'C9']
+21/01/14 18:10:35 437 [INFO,step:72] greed3 played C5, [0, 'CJ', 'C7', 'C9', 'C5']
+21/01/14 18:10:35 437 [INFO,step:98] trick end. winner is 0, [['DJ'], ['C10'], [], []]
+21/01/14 18:10:54 303 [INFO,step:72] zerotree0 played S9, [0, 'S9']
+21/01/14 18:10:54 306 [INFO,step:72] greed1 played SJ, [0, 'S9', 'SJ']
+21/01/14 18:12:22 922 [INFO,benchmark:18] complete info mode: False, against greed: True
+21/01/14 18:12:23 314 [INFO,benchmark:34] mcts_b/k: 10/2, sample_b/k: 10/1
+21/01/14 18:12:23 314 [INFO,benchmark:46] MrZeroTreeSimple v.s. MrGreed for 256x2
+21/01/14 18:12:23 315 [INFO,shuffle:43] shuffle: [['S2', 'S10', 'H2', 'H6', 'H8', 'HQ', 'D2', 'D4', 'D9', 'D10', 'DK', 'C10', 'CJ'], ['S3', 'S4', 'S7', 'S8', 'SJ', 'SQ', 'H4', 'HA', 'D3', 'D5', 'DQ', 'C2', 'C6'], ['S6', 'S9', 'SA', 'H7', 'H10', 'HJ', 'D7', 'D8', 'DA', 'C3', 'C4', 'C5', 'C8'], ['S5', 'SK', 'H3', 'H5', 'H9', 'HK', 'D6', 'DJ', 'C7', 'C9', 'CQ', 'CK', 'CA']]
+21/01/14 18:12:44 941 [INFO,step:72] zerotree0 played S10, [0, 'S10']
+21/01/14 18:12:44 946 [INFO,step:72] greed1 played SJ, [0, 'S10', 'SJ']
+21/01/14 18:12:54 747 [INFO,step:72] zerotree2 played S6, [0, 'S10', 'SJ', 'S6']
+21/01/14 18:12:54 747 [INFO,step:72] greed3 played SK, [0, 'S10', 'SJ', 'S6', 'SK']
+21/01/14 18:12:54 747 [INFO,step:98] trick end. winner is 3, [[], [], [], []]
+21/01/14 18:12:54 802 [INFO,step:72] greed3 played D6, [3, 'D6']
+21/01/14 18:13:06 397 [INFO,step:72] zerotree0 played D9, [3, 'D6', 'D9']
+21/01/14 18:13:06 399 [INFO,step:72] greed1 played DQ, [3, 'D6', 'D9', 'DQ']

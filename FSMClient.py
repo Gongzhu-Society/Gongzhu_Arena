@@ -1,3 +1,4 @@
+# coding=utf-8
 import time, sys, traceback, math,signal,json, random,copy
 import threading
 import urllib.request
@@ -44,7 +45,7 @@ class RobotFamily:
 
         @self.sio.event
         def connect():
-            self.sendmsg('update_sid',{'user':''})
+            self.sendmsg('update_sid',{'robot_list':list(robot_dict.keys())})
             log("connect to server %s" % (pt.url))
             if self.turn == 10000:
                 for pl in self.members:
