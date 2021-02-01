@@ -36,3 +36,23 @@
 21/01/14 18:12:54 802 [INFO,step:72] greed3 played D6, [3, 'D6']
 21/01/14 18:13:06 397 [INFO,step:72] zerotree0 played D9, [3, 'D6', 'D9']
 21/01/14 18:13:06 399 [INFO,step:72] greed1 played DQ, [3, 'D6', 'D9', 'DQ']
+21/02/02 00:53:53 591 [INFO,<module>:19] BETA_POST_RECT: 0.020
+21/02/02 00:53:53 594 [INFO,benchmark:32] complete info: False, mode: 2
+21/02/02 00:54:46 936 [INFO,<module>:19] BETA_POST_RECT: 0.020
+21/02/02 00:54:46 937 [INFO,benchmark:32] complete info: False, mode: 2
+21/02/02 00:54:47 145 [INFO,benchmark:55] Tree v.s. TreeSimple mode
+21/02/02 00:54:47 145 [INFO,benchmark:64] (MrZeroTree+MrZeroTree) v.s. (MrZeroTreeSimple+MrZeroTreeSimple) for 16x2 on cpu
+21/02/02 00:54:47 146 [INFO,benchmark:67] mcts_b/k: 10/2, sample_b/k: -1/-2
+21/02/02 00:54:47 146 [INFO,benchmark:70] mcts_b/k: 10/2, sample_b/k: 9/0
+21/02/02 00:55:34 976 [INFO,<module>:19] BETA_POST_RECT: 0.020
+21/02/02 00:55:34 977 [INFO,benchmark:32] complete info: False, mode: 0
+21/02/02 00:55:35 170 [INFO,benchmark:64] (MrZeroTree+MrZeroTree) v.s. (MrGreed+MrGreed) for 16x2 on cpu
+21/02/02 00:55:35 171 [INFO,benchmark:67] mcts_b/k: 10/2, sample_b/k: -1/-2
+21/02/02 00:58:17 831 [INFO,<module>:19] BETA_POST_RECT: 0.020
+21/02/02 00:58:17 833 [INFO,benchmark:32] complete info: False, mode: 0
+21/02/02 00:58:18 025 [INFO,benchmark:64] (MrZeroTree+MrZeroTree) v.s. (MrGreed+MrGreed) for 16x2 on cpu
+21/02/02 00:58:18 026 [INFO,benchmark:67] mcts_b/k: 10/2, sample_b/k: -1/-2
+21/02/02 00:58:18 034 [INFO,possi_rectify:112] using Li's int_equ_class: 1
+21/02/02 00:58:18 035 [INFO,possi_rectify:167] using Li's int_equ_class: 2
+21/02/02 00:58:26 243 [INFO,possi_rectify:112] using Li's int_equ_class: 1
+21/02/02 00:58:26 244 [INFO,possi_rectify:167] using Li's int_equ_class: 2

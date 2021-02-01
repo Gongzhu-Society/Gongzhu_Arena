@@ -4,7 +4,6 @@ from Util import log,calc_score
 from Util import ORDER_DICT,ORDER_DICT2,ORDER_DICT5,SCORE_DICT,INIT_CARDS
 from MrRandom import MrRandom
 from MrGreed import MrGreed
-from Robot import Robot
 from ScenarioGenerator.ScenarioGen import ScenarioGen
 from MCTS.mcts import mcts
 
@@ -83,16 +82,10 @@ MCTS_EXPL=30
 
 class MrZeroTreeSimple(MrRandom):
     def __init__(self,room=0,place=0,name="default",pv_net=None,device=None,train_mode=False,
-                 sample_b=10,sample_k=1,mcts_b=10,mcts_k=2):
+                 sample_b=10,sample_k=1,mcts_b=20,mcts_k=2):
         MrRandom.__init__(self,room,place,name)
-        if pv_net==None or device==None:
-            from MrZ_NETs import PV_NET_2
-            self.device=torch.device("cpu")
-            self.pv_net=PV_NET_2()
-            self.pv_net.load_state_dict(torch.load("/root/gongzhuarena/RuichenGong/Robots/MrIfOffline/Zero-29th-25-11416629-720.pt",map_location=self.device))
-        else:
-            self.pv_net=pv_net
-            self.device=device
+        self.pv_net=pv_net
+        self.device=device
         self.sample_b=sample_b
         self.sample_k=sample_k
         self.mcts_b=mcts_b
@@ -100,8 +93,6 @@ class MrZeroTreeSimple(MrRandom):
         self.train_mode=train_mode
         if self.train_mode:
             self.train_datas=[]
-        log("MrZeroTree born! room: %s, place: %s, name: %s"%(room,place,name))
-
 
     def cards_lists_oh(cards_lists,place):
         """
@@ -146,9 +137,6 @@ class MrZeroTreeSimple(MrRandom):
         return oh
 
     def prepare_ohs(cards_lists,cards_on_table,score_lists,place):
-        """
-            double the time of four_cards for it to focus
-        """
         oh_card=MrZeroTreeSimple.cards_lists_oh(cards_lists,place)
         oh_score=MrZeroTreeSimple.score_lists_oh(score_lists,place)
         oh_table=MrZeroTreeSimple.four_cards_oh(cards_on_table,place)
