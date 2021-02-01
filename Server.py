@@ -1,6 +1,6 @@
 # coding=utf-8
 
-import time, sys, traceback, math, copy
+import time, sys, traceback, math, copy, random
 #import FSMClient
 from Utils import log,SCORE_DICT,ORDER_DICT2,ORDER_DICT1,RED_LIST4
 from Robots import *
@@ -42,7 +42,7 @@ class RoomHoster:
 
         self.history = []
         # joined cards_on_table
-        self.trick_start = 0
+        self.trick_start = random.randint(0,3)
         self.now_player = 0
         self.trick_end = False
         self.trick_count = 0

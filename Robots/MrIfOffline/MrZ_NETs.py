@@ -95,6 +95,45 @@ class PV_NET_1(PV_NET_FATHER):
         v=self.fcv(x)*VALUE_RENORMAL
         return p,v
 
+class PV_NET_2_small(PV_NET_FATHER):
+    def __init__(self, output_mid_feature=False):
+        super(PV_NET_2_small,self).__init__()
+        self.fc0 = nn.Linear(52*4+(54*3+0*4)+16*4,1024)
+        self.fc1 = nn.Linear(1024,512)
+        self.fc2 = nn.Linear(512,512)
+
+        self.sc0a = nn.Linear(512,512)
+        self.sc0b = nn.Linear(512,512)
+
+        self.fc3 = nn.Linear(512,128)
+
+        self.sc1a = nn.Linear(128,128)
+        self.sc1b = nn.Linear(128,128)
+
+        self.fcp = nn.Linear(128,52)
+        self.fcv = nn.Linear(128,1)
+
+        self.omf = output_mid_feature
+
+    def forward(self,x):
+        x = F.relu(self.fc0(x))
+        x = F.relu(self.fc1(x))
+        f1 = F.relu(self.fc2(x))
+
+        f2 = F.relu(self.sc0b(F.relu(self.sc0a(f1)))) + f1
+
+        x = F.relu(self.fc3(f2))
+
+        x = F.relu(self.sc1b(F.relu(self.sc1a(x)))) + x
+
+        p = self.fcp(x)
+        v = self.fcv(x)
+
+        if self.omf:
+            return p,v,f1,f2
+        else:
+            return p,v
+
 class PV_NET_2(PV_NET_FATHER):
     def __init__(self):
         super(PV_NET_2,self).__init__()
@@ -143,6 +182,57 @@ class PV_NET_2(PV_NET_FATHER):
         p=self.fcp(x)
         v=self.fcv(x)*VALUE_RENORMAL
         return p,v
+
+class PV_NET_2_MID_FEATURE(PV_NET_FATHER):
+    def __init__(self):
+        super(PV_NET_2_MID_FEATURE, self).__init__()
+        self.fc0 = nn.Linear(52 * 4 + (54 * 3 + 0 * 4) + 16 * 4, 2048)
+        self.fc1 = nn.Linear(2048, 2048)
+        self.fc2 = nn.Linear(2048, 512)
+
+        self.sc0a = nn.Linear(512, 512)
+        self.sc0b = nn.Linear(512, 512)
+        self.sc1a = nn.Linear(512, 512)
+        self.sc1b = nn.Linear(512, 512)
+        self.sc2a = nn.Linear(512, 512)
+        self.sc2b = nn.Linear(512, 512)
+        self.sc3a = nn.Linear(512, 512)
+        self.sc3b = nn.Linear(512, 512)
+        self.sc4a = nn.Linear(512, 512)
+        self.sc4b = nn.Linear(512, 512)
+        self.sc5a = nn.Linear(512, 512)
+        self.sc5b = nn.Linear(512, 512)
+        self.sc6a = nn.Linear(512, 512)
+        self.sc6b = nn.Linear(512, 512)
+        self.sc7a = nn.Linear(512, 512)
+        self.sc7b = nn.Linear(512, 512)
+        self.sc8a = nn.Linear(512, 512)
+        self.sc8b = nn.Linear(512, 512)
+        self.sc9a = nn.Linear(512, 512)
+        self.sc9b = nn.Linear(512, 512)
+
+        self.fcp = nn.Linear(512, 52)
+        self.fcv = nn.Linear(512, 1)
+    def forward(self, x):
+        x = F.relu(self.fc0(x))
+        x = F.relu(self.fc1(x))
+        x = F.relu(self.fc2(x))
+        f1 = x
+        x = F.relu(self.sc0b(F.relu(self.sc0a(x)))) + x
+        x = F.relu(self.sc1b(F.relu(self.sc1a(x)))) + x
+        x = F.relu(self.sc2b(F.relu(self.sc2a(x)))) + x
+        x = F.relu(self.sc3b(F.relu(self.sc3a(x)))) + x
+        x = F.relu(self.sc4b(F.relu(self.sc4a(x)))) + x
+        x = F.relu(self.sc5b(F.relu(self.sc5a(x)))) + x
+        f2 = x
+        x = F.relu(self.sc6b(F.relu(self.sc6a(x)))) + x
+        x = F.relu(self.sc7b(F.relu(self.sc7a(x)))) + x
+        x = F.relu(self.sc8b(F.relu(self.sc8a(x)))) + x
+        x = F.relu(self.sc9b(F.relu(self.sc9a(x)))) + x
+        p = self.fcp(x)
+        v = self.fcv(x) * VALUE_RENORMAL
+        return p, v, f1, f2
+
 
 class BasicBlock(nn.Module):
     expansion=1 #?
