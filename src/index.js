@@ -601,11 +601,62 @@ window.onload = function(){
   socket.on('login_reply', function(rdata){
     var data = JSON.parse(rdata);
     gamestate = 'inhall'
-    if(data.is_god==1){
+    if(data.is_god){
       isgod = true;
       //alert('god logged in');
     }
-    grandupdate();
+    console.log('login reply');
+    if(data.already_in){
+      console.log(data);
+      //alert('you already logged in!');
+      if(data.state=='logout'||data.state=='login'){
+        gamestate='inhall';
+        grandupdate();
+        return
+      }
+      else if (data.state=='wait'||data.state=='room'||data.state=='before_start'||data.state=='end'){
+        chambrename=data.room;
+        mylocation = data.place;
+        readystate='unready';
+        unseated = true;
+        gamestate = 'inroom';
+        if (data.state=='wait'||data.state=='before_start'){
+          unseated = false;
+        }
+        if (data.state=='before_start'){
+          readystate = 'ready';
+        }
+        /*
+        if (data.state=='room'){
+          grandupdate();
+          return;
+        }
+        */
+
+        players_in_room = data.players;
+        console.log('players:',players_in_room);
+        determine_relative_position();
+        grandupdate();
+        return
+      }
+      else if (data.state=='trick_before_play'||data.state=='play_a_card'||data.state=='trick_after_play') {
+        gamestate='ingame-wait';
+        players_in_room = data.players;
+        chambrename=data.room;
+        mylocation = data.place;
+        determine_relative_position();
+        assign_hand(data);
+        assign_cards_to_player(data);
+        if (data.state=='play_a_card'){
+          gamestate='ingame-todecide';
+          your_turn_handle(data);
+          grandupdate();
+        }
+      }
+    }
+    else{
+      grandupdate();
+    }
   })
 
   socket.on('enter_room_reply', function(rdata){
@@ -879,6 +930,7 @@ window.onload = function(){
 	  alert('error: '+data['detail']);
   })
 
+  // this protocal is obsolete
   socket.on('new_player',function (rdata){
 	  var data=JSON.parse(rdata);
 	  numberofplayer=data.players.length;
@@ -940,30 +992,8 @@ window.onload = function(){
   })
 
   socket.on('shuffle',function (rdata){
-    if (!isgod){
-	  var data=JSON.parse(rdata);
-      handcardsleft=data.cards;
-      turnsleft=handcardsleft.length;
-      mypointcards=[];
-      leftpoint=[];
-      oppositepoint=[];
-      rightpoint=[];
-      lastroundleft='NA';
-      lastroundright='NA';
-      lastroundme='NA';
-      lastroundopposite='NA';
-      document.getElementById('hleftname').innerHTML='<h3>'+leftplayer+'</h3>'
-      document.getElementById('hrightname').innerHTML='<h3>'+rightplayer+'</h3>'
-      document.getElementById('hoppositename').innerHTML='<h3>'+oppositeplayer+'</h3>'
-      gameMessage='<h2>Game started </h2>';
-      gamestate='ingame-wait';
-      gameover = false;
-      grandupdate();}
-    else{
-      gameover = false;
-      players_seen = [zeroplayer, rightplayer, oppositeplayer, leftplayer];
-      socket.emit('request_group_info',JSON.stringify({user: myname, user_list:players_seen}));
-    }
+    var data=JSON.parse(rdata);
+    assign_hand(data);
   })
 
   socket.on('request_group_info_reply',function (rdata){
@@ -1058,95 +1088,8 @@ window.onload = function(){
       console.log('nothing to be done');
     }
     else{
-	    lastroundme='NA';
-      lastroundleft='NA';
-      lastroundopposite='NA';
-      lastroundright='NA';
-	    var lastcards=deepClone(data.this_trick);
-	    for(;lastcards.length<numberofplayer;){
-		    lastcards.push('NA');
-	    }
-      console.log('last cards');
-      console.log(lastcards);
-	    //var relpos=(data.trick_start-mylocation+numberofplayer)%numberofplayer;
-	    if(numberofplayer==3){
-		    console.log('mylocation '+mylocation+' lastcards '+ lastcards);
-		    lastroundme=lastcards[(-data.trick_start+mylocation+numberofplayer)%numberofplayer];
-		    lastroundright=lastcards[(-data.trick_start+mylocation+1+numberofplayer)%numberofplayer];
-		    lastroundleft=lastcards[(-data.trick_start+mylocation+2+numberofplayer)%numberofplayer];
-
-	    }
-	    if(numberofplayer==4){
-		    lastroundme=lastcards[(-data.trick_start+mylocation+numberofplayer)%numberofplayer];
-		    lastroundright=lastcards[(-data.trick_start+mylocation+1+numberofplayer)%numberofplayer];
-		    lastroundopposite=lastcards[(-data.trick_start+mylocation+2+numberofplayer)%numberofplayer];
-		    lastroundleft=lastcards[(-data.trick_start+mylocation+3+numberofplayer)%numberofplayer]
-	    }
-      for(;lastcards.length>0;){
-		    lastcards.pop();
-	    }
-	    console.log(numberofplayer+' table updated ');
-      updatedplayer=zeroplayer;
-      var relativepos=(data.trick_start+data.this_trick.length-mylocation+numberofplayer)%numberofplayer;
-      if (relativepos==1){
-        updatedplayer=rightplayer
-      }
-      else if (relativepos==2) {
-        if(numberofplayer==3){
-          updatedplayer=leftplayer
-        }
-        else if (numberofplayer==4) {
-          updatedplayer=oppositeplayer;
-        }
-      }
-      else if (relativepos==3) {
-        updatedplayer=leftplayer;
-      }
-
-      gameMessage='<h2>Card played from '+updatedplayer+'</h2>';
-      gamestate='ingame-wait';
-      //grandupdate();
-      if(isgod){
-        //data.trick_start
-        console.log(data.this_trick.length);
-        if(data.this_trick.length==4){
-          lastroundme = data.this_trick[(4-data.trick_start)%4];
-          lastroundright = data.this_trick[(5-data.trick_start)%4];
-          lastroundopposite = data.this_trick[(6-data.trick_start)%4];
-          lastroundleft = data.this_trick[(7-data.trick_start)%4];
-          var uppr = (data.trick_start+3)%4;
-          if(uppr==0){
-            updatedplayer = zeroplayer;
-            deleteelement(handcardsleft, data.this_trick[3]);
-          }
-          else if (uppr==1) {
-            updatedplayer = rightplayer;
-            deleteelement(righthand, data.this_trick[3]);
-          }
-          else if (uppr==2) {
-            updatedplayer = oppositeplayer;
-            deleteelement(oppositehand, data.this_trick[3]);
-          }
-          else if (uppr==3) {
-            updatedplayer = leftplayer;
-            deleteelement(lefthand, data.this_trick[3]);
-          }
-          gameMessage='<h2>Card played from '+updatedplayer+'</h2>';
-          gamestate='ingame-wait';
-          grandupdate();
-        }
-        else{
-          players_seen = [zeroplayer, rightplayer, oppositeplayer, leftplayer];
-          console.log('request upon update');
-          socket.emit('request_group_info',JSON.stringify({user: myname, user_list:players_seen}));
-        }
-
-      }
-      else{
-        grandupdate();
-      }
-    }
-
+       assign_cards_to_player(data);
+     }
     })
 
   socket.on('my_choice_reply',function (rdata){
@@ -1166,21 +1109,7 @@ window.onload = function(){
 
   socket.on('your_turn',function (rdata){
 	    var data=JSON.parse(rdata);
-	    console.log('my turn');
-      colorofthisturn=data.suit;
-      if (colorofthisturn=='J'){
-        colorofthisturn='H';
-      }
-      if (colorofthisturn=='A'){
-        gameMessage='<h2>You should lead this turn</h2>';
-      }
-      else{
-        gameMessage='<h2>Your turn!</h2>';
-      }
-      timeremain = 302;
-      timecounter = setInterval(function(){count_down()}, 1000)
-      gamestate='ingame-thinking';
-      grandupdate();
+	    your_turn_handle(data);
   })
 
   socket.on('trick_end',function (rdata){
@@ -1496,6 +1425,7 @@ window.onload = function(){
       }
     }
   }
+
   //general handler
   determine_relative_position = function(){
     if (numberofplayer==3){
@@ -1527,6 +1457,137 @@ window.onload = function(){
         }
       }
     }
+  }
+
+  assign_hand = function(data){
+    if (!isgod){
+      handcardsleft=data.cards;
+      turnsleft=handcardsleft.length;
+      mypointcards=[];
+      leftpoint=[];
+      oppositepoint=[];
+      rightpoint=[];
+      lastroundleft='NA';
+      lastroundright='NA';
+      lastroundme='NA';
+      lastroundopposite='NA';
+      document.getElementById('hleftname').innerHTML='<h3>'+leftplayer+'</h3>'
+      document.getElementById('hrightname').innerHTML='<h3>'+rightplayer+'</h3>'
+      document.getElementById('hoppositename').innerHTML='<h3>'+oppositeplayer+'</h3>'
+      gameMessage='<h2>Game started </h2>';
+      gamestate='ingame-wait';
+      gameover = false;
+      grandupdate();}
+    else{
+      gameover = false;
+      players_seen = [zeroplayer, rightplayer, oppositeplayer, leftplayer];
+      socket.emit('request_group_info',JSON.stringify({user: myname, user_list:players_seen}));
+    }
+  }
+  assign_cards_to_player = function(data){
+    lastroundme='NA';
+    lastroundleft='NA';
+    lastroundopposite='NA';
+    lastroundright='NA';
+    var lastcards=deepClone(data.this_trick);
+    for(;lastcards.length<numberofplayer;){
+      lastcards.push('NA');
+    }
+    console.log('last cards');
+    console.log(lastcards);
+    //var relpos=(data.trick_start-mylocation+numberofplayer)%numberofplayer;
+    if(numberofplayer==3){
+      console.log('mylocation '+mylocation+' lastcards '+ lastcards);
+      lastroundme=lastcards[(-data.trick_start+mylocation+numberofplayer)%numberofplayer];
+      lastroundright=lastcards[(-data.trick_start+mylocation+1+numberofplayer)%numberofplayer];
+      lastroundleft=lastcards[(-data.trick_start+mylocation+2+numberofplayer)%numberofplayer];
+    }
+    if(numberofplayer==4){
+      lastroundme=lastcards[(-data.trick_start+mylocation+numberofplayer)%numberofplayer];
+      lastroundright=lastcards[(-data.trick_start+mylocation+1+numberofplayer)%numberofplayer];
+      lastroundopposite=lastcards[(-data.trick_start+mylocation+2+numberofplayer)%numberofplayer];
+      lastroundleft=lastcards[(-data.trick_start+mylocation+3+numberofplayer)%numberofplayer]
+    }
+    for(;lastcards.length>0;){
+      lastcards.pop();
+    }
+    console.log(numberofplayer+' table updated ');
+    updatedplayer=zeroplayer;
+    var relativepos=(data.trick_start+data.this_trick.length-mylocation+numberofplayer)%numberofplayer;
+    if (relativepos==1){
+      updatedplayer=rightplayer
+    }
+    else if (relativepos==2) {
+      if(numberofplayer==3){
+        updatedplayer=leftplayer
+      }
+      else if (numberofplayer==4) {
+        updatedplayer=oppositeplayer;
+      }
+    }
+    else if (relativepos==3) {
+      updatedplayer=leftplayer;
+    }
+
+    gameMessage='<h2>Card played from '+updatedplayer+'</h2>';
+    gamestate='ingame-wait';
+    //grandupdate();
+    if(isgod){
+      //data.trick_start
+      console.log(data.this_trick.length);
+      if(data.this_trick.length==4){
+        lastroundme = data.this_trick[(4-data.trick_start)%4];
+        lastroundright = data.this_trick[(5-data.trick_start)%4];
+        lastroundopposite = data.this_trick[(6-data.trick_start)%4];
+        lastroundleft = data.this_trick[(7-data.trick_start)%4];
+        var uppr = (data.trick_start+3)%4;
+        if(uppr==0){
+          updatedplayer = zeroplayer;
+          deleteelement(handcardsleft, data.this_trick[3]);
+        }
+        else if (uppr==1) {
+          updatedplayer = rightplayer;
+          deleteelement(righthand, data.this_trick[3]);
+        }
+        else if (uppr==2) {
+          updatedplayer = oppositeplayer;
+          deleteelement(oppositehand, data.this_trick[3]);
+        }
+        else if (uppr==3) {
+          updatedplayer = leftplayer;
+          deleteelement(lefthand, data.this_trick[3]);
+        }
+        gameMessage='<h2>Card played from '+updatedplayer+'</h2>';
+        gamestate='ingame-wait';
+        grandupdate();
+      }
+      else{
+        players_seen = [zeroplayer, rightplayer, oppositeplayer, leftplayer];
+        console.log('request upon update');
+        socket.emit('request_group_info',JSON.stringify({user: myname, user_list:players_seen}));
+      }
+    }
+    else{
+      grandupdate();
+    }
+  }
+  your_turn_handle = function(data){
+    console.log('my turn');
+    colorofthisturn=data.suit;
+    if (colorofthisturn=='J'){
+      colorofthisturn='H';
+    }
+    if (colorofthisturn=='A'){
+      gameMessage='<h2>You should lead this turn</h2>';
+    }
+    else{
+      gameMessage='<h2>Your turn!</h2>';
+    }
+
+    timeremain = data.time;
+    timecounter = setInterval(function(){count_down()}, 1000)
+    gamestate='ingame-thinking';
+    grandupdate();
   }
   document.getElementById("signinbutton").addEventListener("click", signin);
   document.getElementById("signupbutton").addEventListener("click", sorrylazy);

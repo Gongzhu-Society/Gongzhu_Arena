@@ -3,7 +3,9 @@
 import time, sys, traceback, math, copy, random
 #import FSMClient
 from Utils import log,SCORE_DICT,ORDER_DICT2,ORDER_DICT1,RED_LIST4
-from Robots import *
+from threading import Timer
+WAIT_TIME = 6
+#from Robots import *
 
 def cards_order(card):
     #print(card)
@@ -18,6 +20,7 @@ class PlayerInfo():
         self.scores = []
         self.scores_num = []
         self.ready = False
+        self.is_robot = False
     def clear(self):
         self.cards_list = []
         self.initial_cards = []
@@ -33,7 +36,7 @@ class RoomHoster:
     def __init__(self,gamemode=4):
         self.gamemode = gamemode
         self.players = ['' for i in range(self.gamemode)]
-        self.players_info = {'EXAMPLE':PlayerInfo()}
+        self.players_info = {}
         # key is player's name
         # include 'cards_list', 'initial_cards', 'scores', 'scores_num', 'state','ready'
         self.cards_on_table = []
@@ -144,7 +147,7 @@ class RoomHoster:
                 tmp.append([player,self.players_info[player].ready])
         return tmp
 
-    def add_player(self,name,place = 0):
+    def add_player(self,name,place = 0,isrobot=False):
         if not self.room_state == 'available':
             log('room not available')
             return False
@@ -155,6 +158,7 @@ class RoomHoster:
             self.players[place] = name
 
         self.players_info[name] = PlayerInfo()
+        self.players_info[name].is_robot = isrobot
         if all(self.players):
             self.room_state = 'full'
 
@@ -251,7 +255,7 @@ class RoomHoster:
             self.cards_on_table.append(self.trick_start)
 
         return self.players[self.now_player],'your_turn',\
-            {'suit': 'A' if self.trick_start == self.now_player else self.cards_on_table[1][0]}
+            {'suit': 'A' if self.trick_start == self.now_player else self.cards_on_table[1][0],'time':302}
 
     def update(self):
         return 'update', {'this_trick':self.cards_on_table[1:],'trick_start':self.trick_start}
@@ -286,7 +290,7 @@ class RoomHoster:
         return True
 
     def isempty(self):
-        if all([not pl for pl in self.players]):
+        if all([(not pl or self.players_info[pl].is_robot) for pl in self.players]):
             return True
 
 class UserInfo():
@@ -309,6 +313,7 @@ class FSMServer:
         self.user_state_dict = {0:UserInfo()}
         # 'state':FSMstate,'room':room or -1, 'pwd':password, 'sid':1000
         self.rooms = {0:RoomHoster()}
+        self.timers = {0:None}
 
         self.port = port
 
@@ -438,36 +443,72 @@ class FSMServer:
         TODO: add pwd check
         '''
 
-        if name in self.user_state_dict and not self.user_state_dict[name].state == 'logout':
-            #print('already in')
-            roomid = self.user_state_dict[name].room
-            if not roomid == -1:
-                thisroom = self.rooms[roomid]
-                if thisroom.leave_room(name):
-                    self.user_state_dict[name].room = -1
-                self.send_player_info(roomid)
-                if thisroom.isempty():
-                    self.rooms.pop(roomid)
+        # send error to already_login user
+        #log("{},{}".format(name,self.user_state_dict[name].state))
 
-            self.user_state_dict[name].state = 'logout'
+        if name in self.user_state_dict and not self.user_state_dict[name].state == 'logout':
+
+            #self.user_state_dict[name].state = 'logout'
             self.sendmsg('error', {'detail': 'log in another equipment'},name=name)
 
-
+        # send to new login usr
         if name in self.user_state_dict:
+            # if registed
             self.user_state_dict[data['user']].sid = sid
+            # update sid
+            dict = {}
+            cmd = "login_reply"
+            usrinfo = self.user_state_dict[name]
+            if name[0:4] == 'Dieu' and password == 'liebeyy':
+                self.user_state_dict[name].is_god = True
+                self.sendmsg('login_reply', {'is_god': 1, 'already_in': False}, name=name)
+                return
+
+            if usrinfo.state == 'logout':
+                # if logout, just as new user
+                self.user_state_dict[name].state = 'login'
+                #check if it was a robot
+                if 'is_robot' in data:
+                    self.user_state_dict[name].is_robot = True
+                    self.user_state_dict[name].robot_type = data['robot_type']
+                self.sendmsg('login_reply', {'is_god': 0, 'already_in': False}, name=name)
+                return
+
+            dict['already_in'] = True
+            roomid = usrinfo.room
+            if roomid == -1:
+                dict['state'] = usrinfo.state
+                self.sendmsg(cmd, dict, name=name)
+                return
+
+            thisroom = self.rooms[roomid]
+            plinfo = thisroom.players_info[name]
+
+            suit = 'A' if len(thisroom.cards_on_table) == 1 else thisroom.cards_on_table[1][0]
+
+            dict.update({'room':roomid,'state':usrinfo.state,'place':thisroom.players.index(name),
+                    'cards':plinfo.cards_list,'this_trick':thisroom.cards_on_table[1:],
+                    'trick_start':thisroom.trick_start,'players':self.get_players_info(roomid),
+                    'history':thisroom.history,'initial_cards':plinfo.initial_cards,
+                    'scores':[thisroom.players_info[pl].scores for pl in thisroom.players_info],
+                    'scores_num':[thisroom.players_info[pl].scores_num for pl in thisroom.players_info],
+                         'suit':suit,'time':302})
+            self.sendmsg(cmd,dict,name=name)
+
         else:
             self.user_state_dict[data['user']] = UserInfo()
             self.user_state_dict[data['user']].sid = sid
+            self.user_state_dict[name].state = 'login'
+            if 'is_robot' in data:
+                self.user_state_dict[name].is_robot = True
+                self.user_state_dict[name].robot_type = data['robot_type']
+            if name == 'Dieu' and password == 'liebeyy':
+                self.user_state_dict[name].is_god = True
+                self.sendmsg('login_reply',{'is_god':1,'already_in':False},name=name)
+            else:
+                self.sendmsg('login_reply', {'is_god': 0,'already_in':False}, name=name)
 
-        self.user_state_dict[name].state = 'login'
-        if 'is_robot' in data:
-            self.user_state_dict[name].is_robot = True
-            self.user_state_dict[name].robot_type = data['robot_type']
-        if name == 'Dieu' and password == 'liebeyy':
-            self.user_state_dict[name].is_god = True
-            self.sendmsg('login_reply',{'is_god':1},name=name)
-        else:
-            self.sendmsg('login_reply', {'is_god': 0}, name=name)
+
 
     def requestroomlist(self,sid,data):
         data = self.strip_data(sid, data)
@@ -574,6 +615,20 @@ class FSMServer:
         finally:
             roomid_plus_lock.release()
 
+
+    def close_room(self,roomid):
+        thisroom = self.rooms[roomid]
+        for pl in thisroom.players_info:
+            if thisroom.players_info[pl].is_robot:
+                rb_type = self.user_state_dict[pl].robot_type
+                self.sendmsg('cancel_player', {'user': pl}, sid=self.robot_dict[robot_type])
+                self.send_player_info(roomid)
+            else:
+                log('user was removed')
+                return False
+        return True
+
+
     def enterroom(self,sid,data):
         data = self.strip_data(sid, data)
         name = data['user']
@@ -628,7 +683,8 @@ class FSMServer:
             return
 
         thisroom = self.rooms[roomid]
-        suc = thisroom.add_player(name,place)
+        is_robot = self.user_state_dict[name].is_robot
+        suc = thisroom.add_player(name,place,is_robot)
 
         self.sendmsg('choose_place_reply', {'success': suc},name=name)
         # change state
@@ -683,6 +739,10 @@ class FSMServer:
             cmd, dict = thisroom.update()
             self.sendmsg(cmd,dict,roomid=roomid)
             tar,cmd,dict = thisroom.step()
+            self.timers[tar] = Timer(WAIT_TIME, self.mychoice,
+                                     [self.user_state_dict[tar].sid, json.dumps({'user': tar, 'card': "timeout"}),
+                                      True])
+            self.timers[tar].start()
             self.user_state_dict[tar].state = 'play_a_card'
             self.sendmsg(cmd,dict,name=tar)
 
@@ -718,10 +778,13 @@ class FSMServer:
 
 
 
-    def mychoice(self,sid,data):
+    def mychoice(self,sid,data,is_timer=False):
         data = self.strip_data(sid, data)
         name = data['user']
-
+        if not is_timer:
+            if self.timers[name] is not None:
+                self.timers[name].cancel()
+                self.timers[name] = None
         # check form
         try:
             assert 'card' in data
@@ -772,6 +835,9 @@ class FSMServer:
                 else:
                     log('trick end error')
             else:
+                self.timers[tar] = Timer(WAIT_TIME,self.mychoice,
+                                         [self.user_state_dict[tar].sid,json.dumps({'user':tar,'card':"timeout"}),True])
+                self.timers[tar].start()
                 self.user_state_dict[tar].state = 'play_a_card'
                 self.sendmsg(cmd, dict, name=tar)
 
@@ -805,7 +871,7 @@ class FSMServer:
             self.user_state_dict[name].room = -1
             self.sendmsg('leave_room_reply',{},name=name)
             if thisroom.isempty():
-                self.rooms.pop(roomid)
+                self.close_room(roomid)
 
     def logout(self,sid,data):
         data = self.strip_data(sid, data)
@@ -835,7 +901,7 @@ class FSMServer:
             if thisroom.leave_room(name):
                 self.user_state_dict[name].room = -1
             if thisroom.isempty():
-                self.rooms.pop(roomid)
+                self.close_room(roomid)
 
         self.user_state_dict[name].state = 'logout'
         self.sendmsg('logout_reply',{},name=name)
