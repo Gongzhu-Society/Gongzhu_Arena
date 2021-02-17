@@ -4,7 +4,7 @@ import time, sys, traceback, math, copy, random
 #import FSMClient
 from Utils import log,SCORE_DICT,ORDER_DICT2,ORDER_DICT1,RED_LIST4
 from threading import Timer
-WAIT_TIME = 6
+WAIT_TIME = 300
 #from Robots import *
 
 def cards_order(card):
@@ -21,6 +21,7 @@ class PlayerInfo():
         self.scores_num = []
         self.ready = False
         self.is_robot = False
+        self.robot_type = []
     def clear(self):
         self.cards_list = []
         self.initial_cards = []
@@ -311,9 +312,11 @@ class FSMServer:
                        static_files={'/': 'index.html', '/favicon.ico': 'logo.png', '/asset': 'asset', '/src': 'src'})
 
         self.user_state_dict = {0:UserInfo()}
+        self.sid_user = {'sid':['name']}
         # 'state':FSMstate,'room':room or -1, 'pwd':password, 'sid':1000
         self.rooms = {0:RoomHoster()}
         self.timers = {0:None}
+        self.client_sid = {}
 
         self.port = port
 
@@ -332,8 +335,22 @@ class FSMServer:
         @self.sio.on('update_sid')
         def update_sid(sid,data):
             data = json.loads(data)
+            exist_robot_list = []
+            log('rececive update_sid')
+            if data['robot_list'][0] in self.robot_dict:
+                log('enter if')
+                sid0 = self.robot_dict[data['robot_list'][0]]
+                exist_robot_list = self.sid_user[sid0]
+                self.sid_user.update({sid:exist_robot_list,sid0:[]})
+                for rb in exist_robot_list:
+                    print('rb:{},sid:{}'.format(rb,sid))
+                    self.user_state_dict[rb].sid = sid
             for rb in data['robot_list']:
+                log('enter for')
                 self.robot_dict[rb] = sid
+            if len(exist_robot_list):
+                log('send your_robots')
+                self.sendmsg('your_robots',{'list':exist_robot_list},sid=sid)
 
         @self.sio.on('add_robot_dict')
         def add_robot_dict(sid,data):
@@ -484,7 +501,7 @@ class FSMServer:
             thisroom = self.rooms[roomid]
             plinfo = thisroom.players_info[name]
 
-            suit = 'A' if len(thisroom.cards_on_table) == 1 else thisroom.cards_on_table[1][0]
+            suit = 'A' if len(thisroom.cards_on_table) <= 1 else thisroom.cards_on_table[1][0]
 
             dict.update({'room':roomid,'state':usrinfo.state,'place':thisroom.players.index(name),
                     'cards':plinfo.cards_list,'this_trick':thisroom.cards_on_table[1:],
@@ -498,6 +515,10 @@ class FSMServer:
         else:
             self.user_state_dict[data['user']] = UserInfo()
             self.user_state_dict[data['user']].sid = sid
+            if sid in self.sid_user:
+                self.sid_user[sid].append(data['user'])
+            else:
+                self.sid_user[sid] = [data['user']]
             self.user_state_dict[name].state = 'login'
             if 'is_robot' in data:
                 self.user_state_dict[name].is_robot = True
@@ -621,7 +642,7 @@ class FSMServer:
         for pl in thisroom.players_info:
             if thisroom.players_info[pl].is_robot:
                 rb_type = self.user_state_dict[pl].robot_type
-                self.sendmsg('cancel_player', {'user': pl}, sid=self.robot_dict[robot_type])
+                self.sendmsg('cancel_player', {'user': pl}, sid=self.robot_dict[rb_type])
                 self.send_player_info(roomid)
             else:
                 log('user was removed')
@@ -904,6 +925,8 @@ class FSMServer:
                 self.close_room(roomid)
 
         self.user_state_dict[name].state = 'logout'
+        self.user_state_dict[name].sid = -1
+        self.sid_user[sid].remove(name)
         self.sendmsg('logout_reply',{},name=name)
         self.send_player_info(roomid)
 
@@ -1131,7 +1154,7 @@ class FSMServer:
 
         else:
             rb_type = self.user_state_dict[rbn].robot_type
-            self.sendmsg('cancel_player',{'user':rbn},sid = self.robot_dict[robot_type])
+            self.sendmsg('cancel_player',{'user':rbn},sid = self.robot_dict[rb_type])
             #self.robot_family.cancel_player(rbn)
             self.sendmsg('cancel_robot_reply',{'success':True},name=name)
             self.send_player_info(roomid)
@@ -1144,7 +1167,7 @@ class FSMServer:
             assert 'user_list' in data
             user_list = data['user_list']
         except:
-            self.sendmsg('error', {'detail': 'request info error'}, name=name)
+            self.sendmsg('error', {'detail': 'request info error'}, sid=sid)
             return
 
         cmd = 'request_group_info_reply'
@@ -1171,12 +1194,10 @@ class FSMServer:
                     'cards_remain':plinfo.cards_list,'this_trick':thisroom.cards_on_table[1:],
                     'trick_start':thisroom.trick_start,'players':self.get_players_info(roomid),
                     'history':thisroom.history,'initial_cards':plinfo.initial_cards,
-                    'scores':[thisroom.players_info[pl].scores for pl in thisroom.players],
-                    'scores_num':[thisroom.players_info[pl].scores_num for pl in thisroom.players]}
+                    'scores':[thisroom.players_info[pl].scores if pl else [] for pl in thisroom.players],
+                    'scores_num':[thisroom.players_info[pl].scores_num if pl else [] for pl in thisroom.players]}
             dict[name] = dict_
         self.sendmsg(cmd,dict,name=data["user"])
-
-
 
     def requestinfo(self,sid,data):
         data = self.strip_data(sid, data)
@@ -1210,8 +1231,8 @@ class FSMServer:
                 'cards_remain':plinfo.cards_list,'this_trick':thisroom.cards_on_table[1:],
                 'trick_start':thisroom.trick_start,'players':self.get_players_info(roomid),
                 'history':thisroom.history,'initial_cards':plinfo.initial_cards,
-                'scores':[thisroom.players_info[pl].scores for pl in thisroom.players],
-                'scores_num':[thisroom.players_info[pl].scores_num for pl in thisroom.players]}
+                'scores':[thisroom.players_info[pl].scores if pl else [] for pl in thisroom.players],
+                'scores_num':[thisroom.players_info[pl].scores_num if pl else [] for pl in thisroom.players]}
         self.sendmsg(cmd,dict,name=name)
 
     def shuffle(self,roomid):
