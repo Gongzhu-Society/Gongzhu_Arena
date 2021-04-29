@@ -1,5 +1,5 @@
-# coding=utf-8
-
+#!/usr/bin/env python3
+# -*- coding: UTF-8 -*-
 import time, sys, traceback, math, copy, random
 #import FSMClient
 from Utils import log,SCORE_DICT,ORDER_DICT2,ORDER_DICT1,RED_LIST4
