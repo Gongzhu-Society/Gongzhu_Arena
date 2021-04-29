@@ -6,4 +6,16 @@ This is a platform for different human players and Gongzhu AIs to compete and im
 
 We have already implemented several versions of AI using popular techniques in reinforcement learning, including Q-learning, REINFORCE, and MCTS. They can all serve as baseline for testing the performance of your or your robot's strategy. We are actively improving our robots.
 
+### Version of Socket.io
+
+We happened to pick socketio for server-client communication. The disappointing point is that, socketio is not compatible even between near versions. Socketio also rely on another package `engineio` wrote by the same author which is, not surprisingly, again version sensitive. So we have to sepcify the version it works.
+
+```
+>>> import socketio,engineio
+>>> socketio.__version__
+'4.6.0'
+>>> engineio.__version__
+'3.13.1'
+```
+
 Have fun!
