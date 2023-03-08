@@ -1529,7 +1529,7 @@ window.onload = function(){
       updatedplayer=leftplayer;
     }
 
-    gameMessage='<h2>Card played from '+updatedplayer+'</h2>';
+    gameMessage='<h2>Card playing from '+updatedplayer+'</h2>';
     gamestate='ingame-wait';
     //grandupdate();
     if(isgod){
@@ -1557,7 +1557,7 @@ window.onload = function(){
           updatedplayer = leftplayer;
           deleteelement(lefthand, data.this_trick[3]);
         }
-        gameMessage='<h2>Card played from '+updatedplayer+'</h2>';
+        gameMessage='<h2>Card playing from '+updatedplayer+'</h2>';
         gamestate='ingame-wait';
         grandupdate();
       }
